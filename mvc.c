@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 typedef struct {
     char* mnemonico;
@@ -13,7 +14,7 @@ typedef struct nodo {
     struct nodo *sig;
 }   nodo;
 
-typedef nodo *ListaRotulos;
+typedef struct nodo* ListaRotulos;
 
 //------------------------------------------TRADUCTOR MV----------------------------------------------------------
 
@@ -21,8 +22,8 @@ int main()
 {   
     elementosMnemonicos mnemonicos[25];
     ListaRotulos LR = NULL;
-    char instruccionA[256];
-    __int32 instruccionB=0x0;
+    char instruccionAss[256];
+    __int32 instruccionBin=0x0;
     FILE *archI;
     FILE *archO;
     archI=fopen("assembler.asm","rt");  //se abre el archivo de entrada para leer el programa assembler
@@ -32,7 +33,7 @@ int main()
     {
         while (!feof(archI))
         {
-            fgets(instruccionA,256,archI);  //lee la linea correspondiente del archivo asm
+            fgets(instruccionAss,256,archI);  //lee la linea correspondiente del archivo asm
 
         }
     }
@@ -94,3 +95,42 @@ void cargaMnemonicos(elementosMnemonicos mnemonicos[])  //funcion que carga los 
     mnemonicos[24].cod=24;
     strcpy(mnemonicos[24].mnemonico,"STOP");
 }
+
+void ingresarRotulo(ListaRotulos *LR, char* rotulo, int lineaRotulo)
+{
+    ListaRotulos aux;
+    aux = (ListaRotulos) malloc(sizeof(nodo));
+    aux->linea=lineaRotulo;
+    aux->sig = NULL;
+    strcpy(aux->rotulo,rotulo);
+
+    if (*LR!=NULL)          //Ingresamos el rotulo siempre por cabecera
+        aux->sig = *LR;
+    *LR = aux;
+}
+
+__int32 recorreMnemonicos(elementosMnemonicos mnemonicos[],char* mnemonico)
+{
+    char *mnemonicoMayuscula;
+    int i=0;
+    strcpy(mnemonicoMayuscula,strToUpper(mnemonico));
+
+    while (strcmp(mnemonicos[i].mnemonico,mnemonico)!=0 && i<25)    //Busca el mnemonico en la lista de mnemonicos
+        i++;
+    
+    if(strcmp(mnemonicos[i].mnemonico,mnemonico)==0)    //Si encuentra el mnemonico devuelve el codigo para la instruccion
+        return mnemonicos[i].cod;
+    else 
+        return 0xFFFFFFFF;      //Si no lo encuentra es que no existe 
+    
+}
+
+char* strToUpper(char* palabra){      //Pasa a mayusculas el string que le mandas por parametro
+    
+    for(int i=0;i<strlen(palabra);i++)
+    {
+        palabra[i]=toupper(palabra[i]);
+    }
+    return palabra;
+}
+
