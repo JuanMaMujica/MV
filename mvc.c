@@ -127,6 +127,7 @@ __int32 recorreMnemonicos(elementosMnemonicos mnemonicos[],char* mnemonico)
         return 0xFFFFFFFF;      //Si no lo encuentra es que no existe 
     
 }
+
 char* strToUpper(char* palabra){      //Pasa a mayusculas el string que le mandas por parametro
     
     for(int i=0;i<strlen(palabra);i++)
@@ -135,6 +136,11 @@ char* strToUpper(char* palabra){      //Pasa a mayusculas el string que le manda
     }
     return palabra;
 }
+
+
+
+
+//HOLA COMO ESTAS
 
 
 
