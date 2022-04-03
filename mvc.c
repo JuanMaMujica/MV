@@ -141,6 +141,7 @@ char* strToUpper(char* palabra){      //Pasa a mayusculas el string que le manda
 //aca va mi prueba
 //HOLA COMO ESTAS
 //a
+//asdasdas zayrux
 
 
 
