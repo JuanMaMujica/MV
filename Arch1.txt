@@ -1,0 +1,11 @@
+xor EFX,EFX
+mov [2],0
+mov EAX,%001
+mov EDX,1
+mov ECX,1
+Otro: sys 1
+cmp [1],0
+jn sigue
+add [2],[1]
+add EFX,1
+jmp otro

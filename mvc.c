@@ -2,6 +2,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include "parser.h"
+
+
+typedef struct TRegistros{
+    __int32 ValorRegistro;
+    char nombre[3];
+} TRegistros;
+
 
 typedef struct {
     char* mnemonico;
@@ -18,31 +26,106 @@ typedef struct nodo* ListaRotulos;
 
 //------------------------------------------TRADUCTOR MV----------------------------------------------------------
 
-int main()
-{   
-    /*
+void cargaMnemonicos(elementosMnemonicos mnemonicos[]);
+void ingresarRotulo(ListaRotulos *LR, char* rotulo, int lineaRotulo);
+__int32 recorreMnemonicos(elementosMnemonicos mnemonicos[],char* mnemonico);
+char* strToUpper(char* palabra);
+
+int main(int arg, char *args[])
+{
+
     elementosMnemonicos mnemonicos[25];
     ListaRotulos LR = NULL;
     char instruccionAss[256];
     __int32 instruccionBin=0x0;
     FILE *archI;
     FILE *archO;
-    archI=fopen("assembler.asm","rt");  //se abre el archivo de entrada para leer el programa assembler
-    archO = fopen("programa.mv1","wb"); //se abre el archivo de salida de la traduccion para escritura en binario
+    archI=fopen(args[1],"rt");  //se abre el archivo de entrada para leer el programa assembler
+    archO = fopen(args[2],"wb"); //se abre el archivo de salida de la traduccion para escritura en binario
+
+    char **parsed;
+    TRegistros Registros[16];
 
     if(archI!=NULL)     //si el archivo de entrada no existe o se genera algun error no hace nada
     {
         while (!feof(archI))
         {
-            fgets(instruccionAss,256,archI);  //lee la linea correspondiente del archivo asm
+             fgets(instruccionAss,256,archI);  //lee la linea correspondiente del archivo asm
+             parsed = parseline(instruccionAss);
 
+
+           /*  printf("    LABEL: %s\n", parsed[0] ? parsed[0] : "");
+             printf(" MNEMONIC: %s\n", parsed[1] ? parsed[1] : "");
+             printf("OPERAND 1: %s\n", parsed[2] ? parsed[2] : "");
+             printf("OPERAND 2: %s\n", parsed[3] ? parsed[3] : "");
+             printf("  COMMENT: %s\n", parsed[4] ? parsed[4] : ""); */
+             freeline(parsed);
+             printf("\n \n ---------------------------------------------------------------------------------------- \n \n");
         }
     }
     fclose(archI);
-*/
+
     printf("Hola pa");
 
     return 0;
+}
+
+__int32 DevuelveInmediato(char operando[]){
+    char *ope;
+
+    int es_hexa_u_octal=0;
+    if(operando[0]== '-' || (operando[0] >= '0' && operando[0] <= '9'))
+        return atoi(operando);
+    else{
+        switch(operando[0]){ //Con esto vamos a devolver el valor en decimal.
+            case '#':
+                ope = &operando[1];
+                return atoi(ope);
+                break;
+            case 39: //Si es una letra.
+                return (int) operando[1];
+                break;
+            case '@':
+                es_hexa_u_octal = 1;
+                ope = &operando[1];
+                return strtoul(ope, NULL, 8);
+                break;
+            case '%':
+                es_hexa_u_octal = 1;
+                ope = &operando[1];
+                return strtoul(ope, NULL, 16);
+                break;
+            default:
+                return -1;
+        }
+    }
+}
+
+void InicializaHeader(__int32 Header[]){
+    Header[0] = 0x4D563231;
+    Header[1] = 1024; //Corresponde al DS
+    Header[2] = 1024; //Corresponde al SS
+    Header[3] = 1024; //Corresponde al ES
+    Header[4] = 0; //Corresponde al CS
+}
+
+void InicializaRegistros(TRegistros Registros[]){
+    strcpy(Registros[0].nombre,"DS"); Registros[0].ValorRegistro=0;
+    strcpy(Registros[1].nombre,"SS"); Registros[1].ValorRegistro=0;
+    strcpy(Registros[2].nombre,"ES"); Registros[2].ValorRegistro=0;
+    strcpy(Registros[3].nombre,"CS"); Registros[3].ValorRegistro=0;
+    strcpy(Registros[4].nombre,"HP"); Registros[4].ValorRegistro=0;
+    strcpy(Registros[5].nombre,"IP"); Registros[5].ValorRegistro=0;
+    strcpy(Registros[6].nombre,"SP"); Registros[6].ValorRegistro=0;
+    strcpy(Registros[7].nombre,"BP"); Registros[7].ValorRegistro=0;
+    strcpy(Registros[8].nombre,"CC"); Registros[8].ValorRegistro=0;
+    strcpy(Registros[9].nombre,"AC"); Registros[9].ValorRegistro=0;
+    strcpy(Registros[10].nombre,"AX"); Registros[10].ValorRegistro=0;
+    strcpy(Registros[11].nombre,"BX"); Registros[11].ValorRegistro=0;
+    strcpy(Registros[12].nombre,"CX"); Registros[12].ValorRegistro=0;
+    strcpy(Registros[13].nombre,"DX"); Registros[13].ValorRegistro=0;
+    strcpy(Registros[14].nombre,"EX"); Registros[14].ValorRegistro=0;
+    strcpy(Registros[15].nombre,"FX"); Registros[15].ValorRegistro=0;
 }
 
 void cargaMnemonicos(elementosMnemonicos mnemonicos[])  //funcion que carga los mnemonicos con sus respectivos codigos en un arreglo
@@ -129,7 +212,7 @@ __int32 recorreMnemonicos(elementosMnemonicos mnemonicos[],char* mnemonico)
 }
 
 char* strToUpper(char* palabra){      //Pasa a mayusculas el string que le mandas por parametro
-    
+
     for(int i=0;i<strlen(palabra);i++)
     {
         palabra[i]=toupper(palabra[i]);
@@ -137,11 +220,6 @@ char* strToUpper(char* palabra){      //Pasa a mayusculas el string que le manda
     return palabra;
 }
 
-
-//aca va mi prueba
-//HOLA COMO ESTAS
-//a
-//asdasdas zayrux
 
 
 
