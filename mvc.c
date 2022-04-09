@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+//#include <string.h>
+#include "string.h"
 #include <ctype.h>
 #include "parser.h"
 
@@ -13,7 +14,7 @@ typedef struct TRegistros{
 
 
 typedef struct {
-    char* mnemonico;
+    char mnemonico[5];
     __int32 cod;
 } elementosMnemonicos;
 
@@ -26,6 +27,8 @@ typedef struct nodo {
 typedef struct nodo* ListaRotulos;
 
 //------------------------------------------TRADUCTOR MV----------------------------------------------------------
+int tipoOperando(char op[5]);
+void InicializaRegistros(TRegistros Registros[]);
 void buscaRotulo(ListaRotulos *LR, FILE *archA);
 void parseo(FILE *archA,char **parsed);
 void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemonicos[]);
@@ -33,7 +36,7 @@ void InicializaHeader(__int32 Header[]);
 void cargaMnemonicos(elementosMnemonicos mnemonicos[]);
 void ingresarRotulo(ListaRotulos *LR, char* rotulo, int lineaRotulo);
 __int32 recorreMnemonicos(elementosMnemonicos mnemonicos[],char* mnemonico);
-char* strToUpper(char* palabra);
+void strToUpper(char palabra[]);
 
 int main(int arg, char *args[])
 {
@@ -49,7 +52,12 @@ int main(int arg, char *args[])
     char **parsed;
     TRegistros Registros[16];
 
+    //Inicializamos las estructuras 
     InicializaHeader(header);
+    cargaMnemonicos(mnemonicos);
+    InicializaRegistros(Registros);
+
+    //-------------------------------------------------------
 
 
     if(archI!=NULL)     //si el archivo de entrada no existe o se genera algun error no hace nada
@@ -97,6 +105,8 @@ int main(int arg, char *args[])
         //  freeline(parsed);             
            // printf("\n \n ---------------------------------------------------------------------------------------- \n \n");
 //}
+
+
 
 __int32 DevuelveInmediato(char operando[]){
     char *ope;
@@ -207,8 +217,8 @@ void cargaMnemonicos(elementosMnemonicos mnemonicos[])  //funcion que carga los 
     strcpy(mnemonicos[22].mnemonico,"RND");
     mnemonicos[23].cod=0XFB;
     strcpy(mnemonicos[23].mnemonico,"NOT");
-    mnemonicos[25].cod=0XFF1;
-    strcpy(mnemonicos[25].mnemonico,"STOP");
+    mnemonicos[24].cod=0XFF1;
+    strcpy(mnemonicos[24].mnemonico,"STOP");
 }
 
 void ingresarRotulo(ListaRotulos *LR, char rotulo[], int lineaRotulo)
@@ -225,16 +235,18 @@ void ingresarRotulo(ListaRotulos *LR, char rotulo[], int lineaRotulo)
 }
 
 __int32 recorreMnemonicos(elementosMnemonicos mnemonicos[],char* mnemonico)
-{
-    char *mnemonicoMayuscula;
+{ 
     int i=0;
-    strcpy(mnemonicoMayuscula,strToUpper(mnemonico));
+    strToUpper(mnemonico);
 
-    while (strcmp(mnemonicos[i].mnemonico,mnemonico)!=0 && i<25)    //Busca el mnemonico en la lista de mnemonicos
+    while (strcmp(mnemonicos[i].mnemonico,mnemonico)!=0 && i<25){    //Busca el mnemonico en la lista de mnemonicos
         i++;
-    
-    if(strcmp(mnemonicos[i].mnemonico,mnemonico)==0)    //Si encuentra el mnemonico devuelve el codigo para la instruccion
+    }
+  //  printf("%d %s %s %X\n",i,mnemonicos[i].mnemonico,mnemonico,mnemonicos[i].cod);
+    if(strcmp(mnemonicos[i].mnemonico,mnemonico)==0) {   //Si encuentra el mnemonico devuelve el codigo para la instruccion
+    //    printf("%X\n",mnemonicos[i].cod);
         return mnemonicos[i].cod;
+    }
     else {
         //error=1; //Si no encuentra el mnemonico es un error y no deberia seguir con los operandos.
         return 0xFFFFFFFF;      //Si no lo encuentra es que no existe 
@@ -242,13 +254,13 @@ __int32 recorreMnemonicos(elementosMnemonicos mnemonicos[],char* mnemonico)
     
 }
 
-char* strToUpper(char* palabra){      //Pasa a mayusculas el string que le mandas por parametro
+void strToUpper(char palabra[]){      //Pasa a mayusculas el string que le mandas por parametro
 
     for(int i=0;i<strlen(palabra);i++)
     {
         palabra[i]=toupper(palabra[i]);
     }
-    return palabra;
+
 }
 
 void buscaRotulo(ListaRotulos *LR, FILE *archA){
@@ -271,28 +283,70 @@ void buscaRotulo(ListaRotulos *LR, FILE *archA){
 void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemonicos[]){
     __int32 mnemonico,op1,op2;
     //error=0;
+  
     mnemonico=recorreMnemonicos(mnemonicos,parsed[1]);
+    //printf("Traduccion: %X\n",mnemonico);
+    //printf("%s",parsed[2]);
     if(mnemonico!=0XFFFFFFFF){ //si no hay error sigue con la ejecucion de la traduccion normal
         if(mnemonico<=0XB){
-            
+            printf("Dos operandos\n");
+            //Bloque de dods operandos
         }else if (mnemonico<=0XFB){
-            
-        } else {
+            printf("Un operando\n");
+            char op1String[5];
+            strcpy(op1,parsed[2]);
+            op1=transformaOperando(op1String,tipoOperando(op1String));
 
+            if(tipoOperando(op1)){
+
+            }
+            
+            //Bloque de 1 operando
+        } else {
+            printf("Ningun operando\n");
+            //Bloque ningun oeprando
         }
+        //instruccionBin = mnemonico +op1 +op2
+
+
     } else {
 
     }
+}
 
+    int tipoOperando(char op[5]){
+        char opPC = op[0];
+        int Inmediato= (opPC=='#' || opPC=='@' || opPC=='%' || (opPC >= 48 && opPC <=57) || opPC==39 ||opPC=='-') ;
+        int Directo= opPC == '[';
+        
+        if(Directo){
+            return 0;
+        } else if(Inmediato){
+            return 1;
+        } else {
+            return 2;
+        }
 
+    }
+
+    __int32 transorformaOperando(char operando[5],int tipoOperando){
+
+        if(tipoOperando==0){
+            return DevuelveInmediato();
+        } else if(tipoOperando==1){
+            return DevuelveRegistro();
+        } else {
+            return DevuelveDirecto();
+        }
+        return -1; //Si no es de ningun tipo te tiene que tirar un error
+
+    }
 
     //  Verificamos parsed[1] mnemonico
     // Tenemos que ver si es de 1/2 o ningun operador
     // Verificamos Operador1 Operador 2 o lo que tenga
     //zayrux
 
-
-}
 
 
 
