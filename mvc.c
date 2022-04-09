@@ -289,7 +289,7 @@ void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemon
     //  Verificamos parsed[1] mnemonico
     // Tenemos que ver si es de 1/2 o ningun operador
     // Verificamos Operador1 Operador 2 o lo que tenga
-
+    //zayrux
 
 
 }
