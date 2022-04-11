@@ -13,3 +13,5 @@ Fin: add EFX,1
 NOT EEX; agregado por pao
 NOT EH; agregado por pao
 jmp Otro
+NOT AZ; agregado por pao
+NOT EZX; agregado por pao

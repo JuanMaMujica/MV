@@ -289,8 +289,11 @@ void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemon
                 //(tenemos q diferenciar lo del rotulo inexistente, no lo hice)
                 tipoOpe = tipoOperando(op1String);
                 op1=transformaOperando(op1String,tipoOpe,Registros);
-                *instruccionBin = (mnemonico << 24) | ((tipoOpe << 22) & 0x00C00000) | (op1 & 0x00000FFF);
-                printf("instruccion bin: %X\n",*instruccionBin);
+                if (op1!=-1){
+                    *instruccionBin = (mnemonico << 24) | ((tipoOpe << 22) & 0x00C00000) | (op1 & 0x00000FFF);
+                    printf("instruccion bin: %X\n",*instruccionBin);
+                }else
+                    printf("No existe el operando ingresado. \n"); //puede ser que no exista el tipo de operando, que no exista el registro..etc               
             }
             //Bloque de 1 operando
         } else {
@@ -385,67 +388,70 @@ __int32 DevuelveRegistro(char operando[],TRegistros Registros[]){
     __int32 seccionReg;
     __int32 aux;
     __int32 res;
+    int condicion;
+
     strToUpper(operando);
-        
+
     //buscaRegistro 
     res = buscaRegistro(operando,Registros);
     if (res!=-1){ //registros de la primer columna (32 bits)
         return res;
     }else{  //puede ser que sea un registro inexistente o que sean los registros AX,AH,AL etc..
-            //falta considerar caso de registro inexistente
-        aux = 10 + (operando[0] - 'A'); 
-        if (operando[1] == 'X') //11 en la seccion de registro
-                seccionReg = 3;
-        else
-            if (operando[1] == 'L') //01 en la seccion de registro
-                seccionReg = 1;
-            else
-                if (operando[1] == 'H') //10 en la seccion de registro
-                    seccionReg = 2;
-
+        condicion = (operando[0] >= 'A' && operando[0] <= 'F');
+        if ((condicion) && (operando[2]=='\0')) {
+            switch (operando[1]) {
+                case 'X':  seccionReg = 3;  //11 en la seccion de registro
+                break;
+                case 'L': seccionReg = 1;   //01 en la seccion de registro
+                break;
+                case 'H': seccionReg = 2;   //10 en la seccion de registro
+                break;
+                default: return -1;    //por ejemplo AZ
+            }
+            aux = 10 + (operando[0] - 'A');
+            return (seccionReg<<4) | aux; 
+        }else
+            return -1; //registro inexistente. por ejemplo MM o EZX
+    }
         //printf("letra en decimal: %d \n",aux);
         //printf("seccion: %X\n",seccionReg<<4);
-        printf("devuelve: %X\n",(seccionReg<<4) | aux);
+        //printf("devuelve: %X\n",(seccionReg<<4) | aux);
+}
 
-        return (seccionReg<<4) | aux;
+int tipoOperando(char op[5]){
+    char opPC = op[0];
+    int Inmediato= (opPC=='#' || opPC=='@' || opPC=='%' || (opPC >= 48 && opPC <= 57) || opPC==39 ||opPC=='-') ;
+    int Directo= (opPC == '[');
+    
+    //printf("primer char: %c\n",opPC);
+
+    if(Inmediato){
+        return 0;
+    } else if(Directo){
+        return 2;
+    } else {
+        return 1; //de registro
     }
 }
 
-    int tipoOperando(char op[5]){
-        char opPC = op[0];
-        int Inmediato= (opPC=='#' || opPC=='@' || opPC=='%' || (opPC >= 48 && opPC <= 57) || opPC==39 ||opPC=='-') ;
-        int Directo= (opPC == '[');
-    
-        //printf("primer char: %c\n",opPC);
+__int32 transformaOperando(char operando[5],int tipoOperando,TRegistros Registros[]){
 
-        if(Inmediato){
-            return 0;
-        } else if(Directo){
-            return 2;
-        } else {
-            return 1; //de registro
+    if(tipoOperando==0){
+        printf("Inmediato\n");
+        return DevuelveInmediato(operando);
+    } else if(tipoOperando==2){
+        printf("Directo\n");
+        //return DevuelveDirecto(operando);
+        return 0;
+    } else 
+        if (tipoOperando==1){
+            printf("Registro\n");
+            return DevuelveRegistro(operando,Registros); 
         }
-
-    }
-
-    __int32 transformaOperando(char operando[5],int tipoOperando,TRegistros Registros[]){
-
-        if(tipoOperando==0){
-            printf("Inmediato\n");
-            return DevuelveInmediato(operando);
-        } else if(tipoOperando==2){
-            printf("Directo\n");
-            //return DevuelveDirecto(operando);
-            return 0;
-        } else 
-            if (tipoOperando==1){
-               printf("Registro\n");
-               return DevuelveRegistro(operando,Registros); 
-            }
-            else
-                return -1; //Si no es de ningun tipo te tiene que tirar un error
-        //return 0;
-    }
+        else
+            return -1; //Si no es de ningun tipo te tiene que tirar un error
+    //return 0;
+}
 
     //  Verificamos parsed[1] mnemonico
     // Tenemos que ver si es de 1/2 o ningun operador
