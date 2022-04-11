@@ -1,1 +1,1 @@
-jmp otro
+jp %10
