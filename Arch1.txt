@@ -1,5 +1,5 @@
-not [%41]; ; agregado por pao
-xor EFX,EFX
+not [3000]; ; agregado por pao
+xor EFX,FX
 mov [#20],0
 mov EAX,%001
 jp Fin
@@ -15,3 +15,4 @@ NOT EH; agregado por pao
 jmp Otro
 NOT AZ; agregado por pao
 NOT EZX; agregado por pao
+STOP
