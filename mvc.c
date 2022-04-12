@@ -27,10 +27,11 @@ typedef struct nodo {
 typedef struct nodo* ListaRotulos;
 
 //------------------------------------------TRADUCTOR MV----------------------------------------------------------
-int tipoOperando(char op[5]);
-__int32 transformaOperando(char operando[5],int tipoOperando,TRegistros Registros[]);
-__int32 DevuelveInmediato(char operando[]);
-__int32 DevuelveDirecto(char operando[]);
+int rotuloInmediato(ListaRotulos LR, char operando[]);
+int tipoOperando(char op[5],ListaRotulos LR);
+__int32 transformaOperando(char operando[5],int tipoOperando,TRegistros Registros[],ListaRotulos LR);
+__int32 DevuelveInmediato(char operando[],ListaRotulos LR);
+__int32 DevuelveDirecto(char operando[], TRegistros Registros[]);
 __int32 DevuelveRegistro(char operando[],TRegistros Registros[]);
 __int32 esRotulo(char ope[],ListaRotulos LR);
 __int32 buscaRegistro(char operando[],TRegistros Registros[]);
@@ -46,6 +47,7 @@ void strToUpper(char palabra[]);
 
 int main(int arg, char *args[])
 {
+    int i=0;    //checkear cuando hay que sumar el numero de linea y cuando no
     __int32 header[6];
     elementosMnemonicos mnemonicos[25];
     ListaRotulos LR = NULL;
@@ -64,7 +66,7 @@ int main(int arg, char *args[])
     InicializaRegistros(Registros);
 
     //-------------------------------------------------------
-
+    Registros[0].ValorRegistro=10;
 
     if(archI!=NULL)     //si el archivo de entrada no existe o se genera algun error no hace nada
     {
@@ -80,7 +82,7 @@ int main(int arg, char *args[])
             if((!lineaVacia)){
                 Traduccion(parsed,&instruccionBin,mnemonicos,LR,Registros);
             }  else {
-
+            
             } 
 
 
@@ -239,7 +241,7 @@ void strToUpper(char palabra[]){      //Pasa a mayusculas el string que le manda
 void buscaRotulo(ListaRotulos *LR, FILE *archA){
     char instruccionAss[256];
     char **parsed;
-    int i=1;
+    int i=0;
 
     while(!feof(archA)){
         fgets(instruccionAss,256,archA);  //lee la linea correspondiente del archivo asm
@@ -264,6 +266,8 @@ __int32 esRotulo(char ope[],ListaRotulos LR){
 }
 
 void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemonicos[],ListaRotulos LR,TRegistros Registros[]){
+    
+    //VERIFICAR EL ERROR DE SINTAXIS CUANDO NO ENCUENTRA UN MNEMONICO
     __int32 mnemonico,op1,op2;
     int tipoOpe;
     //error=0;
@@ -273,31 +277,20 @@ void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemon
     //printf("%s",parsed[2]);
     if(mnemonico!=0XFFFFFFFF){ //si no hay error sigue con la ejecucion de la traduccion normal
         if(mnemonico<=0XB){
-            printf("Dos operandos\n");
+           // printf("Dos operandos\n");
             //Bloque de dos operandos
         }else if (mnemonico<=0XFB){
-            printf("Un operando\n");
+           // printf("Un operando\n");
             char op1String[5];
             strcpy(op1String,parsed[2]);
             //hacer una funcion q determine si es un rotulo -> inmediato, le pongo el valor d la linea donde esta ese rótulo
-            op1=esRotulo(op1String,LR);
-            if (op1!=-1){    //si encontré el rótulo 
-                tipoOpe = 0;
-                *instruccionBin = (mnemonico << 24) | ((tipoOpe << 22) & 0x00C00000) | (op1 & 0x00000FFF);
-                printf("instruccion bin: %X\n",*instruccionBin);
-            }else{  //acá puede ser un rótulo inexistente o otra cosa 
-                //(tenemos q diferenciar lo del rotulo inexistente, no lo hice)
-                tipoOpe = tipoOperando(op1String);
-                op1=transformaOperando(op1String,tipoOpe,Registros);
-                if (op1!=-1){
-                    *instruccionBin = (mnemonico << 24) | ((tipoOpe << 22) & 0x00C00000) | (op1 & 0x00000FFF);
-                    printf("instruccion bin: %X\n",*instruccionBin);
-                }else
-                    printf("No existe el operando ingresado. \n"); //puede ser que no exista el tipo de operando, que no exista el registro..etc               
-            }
+            tipoOpe = tipoOperando(op1String,LR);
+            op1 =transformaOperando(op1String,tipoOpe,Registros,LR);
+            printf("Operando= %d\n",op1);
+            /*
             //Bloque de 1 operando
         } else {
-            printf("Ningun operando\n");
+           // printf("Ningun operando\n");
             //Bloque ningun oeprando
         }
         //instruccionBin = mnemonico +op1 +op2
@@ -308,33 +301,37 @@ void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemon
     }
 }
 
-    __int32 DevuelveInmediato(char operando[]){
+    __int32 DevuelveInmediato(char operando[], ListaRotulos LR){
         char *ope;
 
         int es_hexa_u_octal=0;
         if(operando[0]== '-' || (operando[0] >= '0' && operando[0] <= '9'))
             return atoi(operando);
         else{
-            switch(operando[0]){ //Con esto vamos a devolver el valor en decimal.
-                case '#':
-                    ope = &operando[1];
-                    return atoi(ope);
-                    break;
-                case 39: //Si es una letra.
-                    return (int) operando[1];
-                    break;
-                case '@':
-                    es_hexa_u_octal = 1;
-                    ope = &operando[1];
-                    return strtoul(ope, NULL, 8);
-                    break;
-                case '%':
-                    es_hexa_u_octal = 1;
-                    ope = &operando[1];
-                    return strtoul(ope, NULL, 16);
-                    break;
-                default:
-                    return -1;
+            if(operando[0]>=65 && operando[0]<=90){
+                return esRotulo(operando,LR);
+            } else {
+                switch(operando[0]){ //Con esto vamos a devolver el valor en decimal.
+                    case '#':
+                        ope = &operando[1];
+                        return atoi(ope);
+                        break;
+                    case 39: //Si es una letra.
+                        return (int) operando[1];
+                        break;
+                    case '@':
+                        es_hexa_u_octal = 1;
+                        ope = &operando[1];
+                        return strtoul(ope, NULL, 8);
+                        break;
+                    case '%':
+                        es_hexa_u_octal = 1;
+                        ope = &operando[1];
+                        return strtoul(ope, NULL, 16);
+                        break;
+                    default:
+                        return -1;
+                }
             }
         }
     }
@@ -383,6 +380,41 @@ __int32 buscaRegistro(char operando[],TRegistros Registros[]){
         return -1;
 }
 
+__int32 DevuelveDirecto(char operando[], TRegistros Registros[]){
+    char *ope;
+    ope = &operando[1];
+    ope[strlen(ope)-1]='\0';
+    printf("%s",ope);
+    int es_hexa_u_octal=0;
+    if(ope[0] >= '0' && ope[0] <= '9'){
+         return (atoi(ope) + Registros[0].ValorRegistro);
+    }else{
+        switch(ope[0]){ //Con esto vamos a devolver el valor en decimal.
+            case '#':
+                ope = &ope[1];
+                return atoi(ope) + Registros[0].ValorRegistro;
+                break;
+            case 39: //Si es una letra.
+                return (int) ope[1] + Registros[0].ValorRegistro;
+                break;
+            case '@':
+                es_hexa_u_octal = 1;
+                ope = &ope[1];
+                return strtoul(ope, NULL, 8) + Registros[0].ValorRegistro;
+                break;
+            case '%':
+                es_hexa_u_octal = 1;
+                ope = &ope[1];
+                return strtoul(ope, NULL, 16) + Registros[0].ValorRegistro;
+                break;
+            default:
+                return -1;
+        }
+    }
+
+}
+
+
 __int32 DevuelveRegistro(char operando[],TRegistros Registros[]){
 
     __int32 seccionReg;
@@ -418,9 +450,9 @@ __int32 DevuelveRegistro(char operando[],TRegistros Registros[]){
         //printf("devuelve: %X\n",(seccionReg<<4) | aux);
 }
 
-int tipoOperando(char op[5]){
+int tipoOperando(char op[5],ListaRotulos LR){
     char opPC = op[0];
-    int Inmediato= (opPC=='#' || opPC=='@' || opPC=='%' || (opPC >= 48 && opPC <= 57) || opPC==39 ||opPC=='-') ;
+    int Inmediato= (opPC=='#' || opPC=='@' || opPC=='%' || (opPC >= 48 && opPC <= 57) || opPC==39 ||opPC=='-' || rotuloInmediato(LR,op) ) ;
     int Directo= (opPC == '[');
     
     //printf("primer char: %c\n",opPC);
@@ -431,26 +463,36 @@ int tipoOperando(char op[5]){
         return 2;
     } else {
         return 1; //de registro
-    }
+    } 
+
 }
 
-__int32 transformaOperando(char operando[5],int tipoOperando,TRegistros Registros[]){
+__int32 transformaOperando(char operando[5],int tipoOperando,TRegistros Registros[],ListaRotulos LR){
 
     if(tipoOperando==0){
-        printf("Inmediato\n");
-        return DevuelveInmediato(operando);
+      //  printf("Inmediato\n");
+        return DevuelveInmediato(operando,LR);
     } else if(tipoOperando==2){
-        printf("Directo\n");
+        printf("Directo\t");
         //return DevuelveDirecto(operando);
-        return 0;
+        return DevuelveDirecto(operando,Registros); // Aca iria devuelveDriecto
     } else 
         if (tipoOperando==1){
-            printf("Registro\n");
+          //  printf("Registro\n");
             return DevuelveRegistro(operando,Registros); 
         }
         else
             return -1; //Si no es de ningun tipo te tiene que tirar un error
     //return 0;
+}
+
+int rotuloInmediato(ListaRotulos LR, char operando[]){
+    while (LR!=NULL && strcmp(operando,LR->rotulo)!=0)
+        LR = LR->sig;
+    if (LR!=NULL && strcmp(operando,LR->rotulo)==0)  //si lo encontré
+        return 1;
+    else
+        return 0;
 }
 
     //  Verificamos parsed[1] mnemonico

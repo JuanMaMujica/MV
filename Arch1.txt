@@ -1,12 +1,12 @@
-not AX; ; agregado por pao
+not [%41]; ; agregado por pao
 xor EFX,EFX
-mov [2],0
+mov [#20],0
 mov EAX,%001
 jp Fin
 mov EDX,1
 mov ECX,1
 Otro: sys 1
-cmp [1],0
+cmp [%10],0
 jn sigue
 add [2],[1]
 Fin: add EFX,1
