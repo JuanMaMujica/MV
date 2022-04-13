@@ -268,26 +268,28 @@ void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemon
             tipoOpe1 = tipoOperando(op1String,LR);
             tipoOpe2 = tipoOperando(op2String,LR);
             op1 =transformaOperando(op1String,tipoOpe1,Registros,LR);
-            if(op1>0X7FF){
-                op1 = op1 & 0X7FF;
-                printf("Maestro me parece que te pasaste");
+
+            if (tipoOpe1==0){
+                if(op1>0XFFF){
+                op1 = op1 & 0XFFF;
+                printf("El operando 1 fue truncado \t");
             }
-            if(op1<0X800){
-                op1 = op1 & 0XFFFFF800;
-                printf("Maestro me parece que te pasaste");
-            }
-            op2 =transformaOperando(op2String,tipoOpe2,Registros,LR);
-            if(op2>0X7FF){
-                op2 = op2 & 0X7FF;
-                printf("Maestro me parece que te pasaste");
             } 
-            if(op2<0XFFFF800){
-                op2 = op2 & 0XFFFFF800;
-                printf("Maestro me parece que te pasaste");
-            }
+            
+            op2 =transformaOperando(op2String,tipoOpe2,Registros,LR);
+
+            if (tipoOpe2==0){
+                if(op2>0XFFF){
+                op2 = op2 & 0XFFF;
+                printf("El operando 2 fue truncado");
+            } 
+
+            } 
+            
+            
          //   printf("%d %d\n",op1 ,op2);
-            *instruccionBin = (mnemonico<<28) | ((tipoOpe1<<26) & 0x0C000000) | ((tipoOpe2<<24) & 0x03000000) | ((op1<<12) & 0x00FFF000) | (op2 & 0x00000FFF);
-            printf("%X\n", *instruccionBin);
+            *instruccionBin = (mnemonico<<28) | ((tipoOpe1<<26) & 0x0C000000) | ((tipoOpe2<<24) & 0x03000000) | ((op1<<12)) | (op2);
+            printf("%08X  \n", *instruccionBin);
 
             //Bloque de dos operandos
         }else if (mnemonico<=0XFB){
@@ -297,17 +299,17 @@ void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemon
             //hacer una funcion q determine si es un rotulo -> inmediato, le pongo el valor d la linea donde esta ese rótulo
             tipoOpe1 = tipoOperando(op1String,LR);
             op1 =transformaOperando(op1String,tipoOpe1,Registros,LR);
-            if(op1>0X7FFF){
-                op1 = op1 & 0X7FFF;
-                printf("Maestro me parece que te pasaste");
+
+            if (tipoOpe1==0){
+                if(op1>0XFFFF){
+                op1 = op1 & 0XFFFF;
+                printf("Tu unico operando fue truncado \t");
             }
-            if(op1<0X8000){
-                op1 = op1 & 0XFFFFF800;
-                printf("Maestro me parece que te pasaste");
             }
+
          //   printf("Operando= %d\n",op1);
-            *instruccionBin = (mnemonico << 24) | ((tipoOpe1 << 22) & 0x00C00000) | (op1 & 0x00000FFF);
-            printf("%X\n",*instruccionBin);
+            *instruccionBin = (mnemonico << 24) | ((tipoOpe1 << 22) & 0x00C00000) | (op1);
+            printf("%08X\n",*instruccionBin);
             //Bloque de 1 operando
         }
 
@@ -333,9 +335,11 @@ __int32 DevuelveInmediato(char operando[], ListaRotulos LR){
                 switch(operando[0]){ //Con esto vamos a devolver el valor en decimal.
                     case '#':
                         ope = &operando[1];
+
                         return atoi(ope);
                         break;
                     case 39: //Si es una letra.
+                        
                         return (int) operando[1];
                         break;
                     case '@':

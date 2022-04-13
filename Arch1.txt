@@ -3,7 +3,7 @@ xor EFX,FX
 mov [#20],0
 mov EAX,%001
 jp Fin
-mov EDX,1
+mov EDX,32
 mov ECX,1
 Otro: sys 1
 cmp [%10],0
