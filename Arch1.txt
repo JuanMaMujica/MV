@@ -1,8 +1,8 @@
 not [3000]; ; agregado por pao
-xor EFX,FX
+Yxor EFX,FX
 mov [#20],0
 mov EAX,%001
-jp Fin
+jp Marcelo
 mov EDX,32
 mov ECX,1
 Otro: sys 1

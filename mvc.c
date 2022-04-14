@@ -38,7 +38,7 @@ __int32 buscaRegistro(char operando[],TRegistros Registros[]);
 void InicializaRegistros(TRegistros Registros[]);
 void buscaRotulo(ListaRotulos *LR, FILE *archA);
 void parseo(FILE *archA,char **parsed);
-void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemonicos[],ListaRotulos LR,TRegistros Registros[]);
+void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemonicos[],ListaRotulos LR,TRegistros Registros[],int *error,int i);
 void InicializaHeader(__int32 Header[]);
 void cargaMnemonicos(elementosMnemonicos mnemonicos[]);
 void ingresarRotulo(ListaRotulos *LR, char* rotulo, int lineaRotulo);
@@ -47,6 +47,7 @@ void strToUpper(char palabra[]);
 
 int main(int arg, char *args[])
 {
+    int error=0; //equivale a 0 cuando no hay error, pasa a 1 cuando se encuentra un error
     int i=0;    //checkear cuando hay que sumar el numero de linea y cuando no
     __int32 header[6];
     elementosMnemonicos mnemonicos[25];
@@ -54,8 +55,10 @@ int main(int arg, char *args[])
     __int32 instruccionBin=0x0;
     FILE *archI;
     FILE *archO;
+    FILE *archTemp;
     archI=fopen(args[1],"rt");  //se abre el archivo de entrada para leer el programa assembler
     archO = fopen(args[2],"wb"); //se abre el archivo de salida de la traduccion para escritura en binario
+    archTemp = fopen("temporal.bin","wb");
 
     char **parsed;
     TRegistros Registros[16];
@@ -74,19 +77,31 @@ int main(int arg, char *args[])
         fseek(archI,0,SEEK_SET);
         while (!feof(archI))
         {   
+            printf("[%04d]:\t",i);
+            error=0;
             char instruccionAss[256];
             fgets(instruccionAss,256,archI);  //lee la linea correspondiente del archivo asm
             parsed = parseline(instruccionAss);
           // parseo(archI,parsed);
             int lineaVacia = parsed[0]==NULL && parsed[1]==NULL && parsed[2]==NULL && parsed[3]==NULL;
             if((!lineaVacia)){
-                Traduccion(parsed,&instruccionBin,mnemonicos,LR,Registros);
+                Traduccion(parsed,&instruccionBin,mnemonicos,LR,Registros,&error,i);
+              //  fwrite(instruccionBin,sizeof(__int32),1,archTemp);
             }  else {
             
             } 
-
-
             freeline(parsed);
+
+            if(error){
+                //printf("Hubo un error\n");
+              /*
+                __int32 instruccionTemp[256];
+                while(fgets(instruccionTemp,256,archTemp)){
+                    fwrite(instruccionTemp,sizeof(__int32),1,archO);
+                }
+                */
+            }
+            i++;
         }
         
  
@@ -246,10 +261,10 @@ __int32 esRotulo(char ope[],ListaRotulos LR){
     if (LR!=NULL && strcmp(ope,LR->rotulo)==0)  //si lo encontré
         return LR->linea;
     else
-        return -1;
+        return 0XFFF; // ERROR: no se encuentra el rotulo
 }
 
-void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemonicos[],ListaRotulos LR,TRegistros Registros[]){
+void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemonicos[],ListaRotulos LR,TRegistros Registros[],int *error,int i){
     
     //VERIFICAR EL ERROR DE SINTAXIS CUANDO NO ENCUENTRA UN MNEMONICO
     __int32 mnemonico,op1,op2;
@@ -257,7 +272,7 @@ void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemon
     //error=0;
   
     mnemonico=recorreMnemonicos(mnemonicos,parsed[1]);
-    //printf("Traduccion: %X\n",mnemonico);
+   // printf("Traduccion: %X\n",mnemonico);
     //printf("%s",parsed[2]);
     if(mnemonico!=0XFFFFFFFF && mnemonico!=0xFF1){ //si no hay error sigue con la ejecucion de la traduccion normal
         if(mnemonico<=0XB){
@@ -271,25 +286,22 @@ void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemon
 
             if (tipoOpe1==0){
                 if(op1>0XFFF){
-                op1 = op1 & 0XFFF;
-                printf("El operando 1 fue truncado \t");
-            }
-            } 
-            
+                    op1 = op1 & 0XFFF;
+                    printf("El operando 1 fue truncado \t");
+                }
+            }  
             op2 =transformaOperando(op2String,tipoOpe2,Registros,LR);
 
             if (tipoOpe2==0){
                 if(op2>0XFFF){
-                op2 = op2 & 0XFFF;
-                printf("El operando 2 fue truncado");
+                    op2 = op2 & 0XFFF;
+                    printf("El operando 2 fue truncado");
+                } 
             } 
-
-            } 
-            
-            
          //   printf("%d %d\n",op1 ,op2);
             *instruccionBin = (mnemonico<<28) | ((tipoOpe1<<26) & 0x0C000000) | ((tipoOpe2<<24) & 0x03000000) | ((op1<<12)) | (op2);
-            printf("%08X  \n", *instruccionBin);
+            printf("%02X %02X %02X %02X\t\t%d: %s\t\t%s, %s\t\t%s\n",(*instruccionBin>>24) & 0XFF,(*instruccionBin>>16)&0XFF,(*instruccionBin>>8)&0XFF,*instruccionBin & 0XFF ,i+1,parsed[1],parsed[2],parsed[3],parsed[4]);
+         //   printf("%08X  \n", *instruccionBin);
 
             //Bloque de dos operandos
         }else if (mnemonico<=0XFB){
@@ -300,26 +312,35 @@ void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemon
             tipoOpe1 = tipoOperando(op1String,LR);
             op1 =transformaOperando(op1String,tipoOpe1,Registros,LR);
 
+            if(op1==0XFFF)
+                *error=1;
+            
             if (tipoOpe1==0){
                 if(op1>0XFFFF){
-                op1 = op1 & 0XFFFF;
-                printf("Tu unico operando fue truncado \t");
-            }
+                    op1 = op1 & 0XFFFF;
+                    printf("Tu unico operando fue truncado \t");
+                }
             }
 
          //   printf("Operando= %d\n",op1);
-            *instruccionBin = (mnemonico << 24) | ((tipoOpe1 << 22) & 0x00C00000) | (op1);
-            printf("%08X\n",*instruccionBin);
+            *instruccionBin = ((mnemonico << 24) & 0XFF000000) | ((tipoOpe1 << 22) & 0x00C00000) | (op1);
+            printf("%02X %02X %02X %02X\t\t%d: %s\t\t%s\t\t%s\n",(*instruccionBin>>24) & 0XFF,(*instruccionBin>>16)&0XFF,(*instruccionBin>>8)&0XFF,*instruccionBin & 0XFF ,i+1,parsed[1],parsed[2],parsed[4]);
             //Bloque de 1 operando
         }
 
         //instruccionBin = mnemonico +op1 +op2
 
-
-    } else {
-        *instruccionBin = (mnemonico<<20) & 0XFFF00000;
-        printf("%X",*instruccionBin); 
+        }else {
+            if(mnemonico==0XFFFFFFFF){
+                *error=1;
+                *instruccionBin = mnemonico;
+            }
+            else
+                *instruccionBin = (mnemonico<<20) & 0XFFF00000;
+        printf("%X\n",*instruccionBin); 
     }
+    
+
 }
 
 __int32 DevuelveInmediato(char operando[], ListaRotulos LR){
@@ -353,7 +374,7 @@ __int32 DevuelveInmediato(char operando[], ListaRotulos LR){
                         return strtoul(ope, NULL, 16);
                         break;
                     default:
-                        return -1;
+                        return -1;  // Utilizamos -1 para decir que es un error de sintaxis 
                 }
             }
         }
@@ -427,12 +448,12 @@ __int32 DevuelveRegistro(char operando[],TRegistros Registros[]){
                 break;
                 case 'H': seccionReg = 2;   //10 en la seccion de registro
                 break;
-                default: return -1;    //por ejemplo AZ
+                default: return 0XFFF;    //por ejemplo AZ
             }
             aux = 10 + (operando[0] - 'A');
             return (seccionReg<<4) | aux; 
         }else
-            return -1; //registro inexistente. por ejemplo MM o EZX
+            return 0XFFF; //registro inexistente. por ejemplo MM o EZX
     }
         //printf("letra en decimal: %d \n",aux);
         //printf("seccion: %X\n",seccionReg<<4);
