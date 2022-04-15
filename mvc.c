@@ -38,7 +38,7 @@ __int32 buscaRegistro(char operando[],TRegistros Registros[]);
 void InicializaRegistros(TRegistros Registros[]);
 void buscaRotulo(ListaRotulos *LR, FILE *archA);
 void parseo(FILE *archA,char **parsed);
-void Traduccion(char **parsed,__int32 instruccionBin[],elementosMnemonicos mnemonicos[],ListaRotulos LR,TRegistros Registros[],int *error,int i,char *imprimir);
+void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemonicos[],ListaRotulos LR,TRegistros Registros[],int *error,int i,char *imprimir);
 void InicializaHeader(__int32 Header[]);
 void cargaMnemonicos(elementosMnemonicos mnemonicos[]);
 void ingresarRotulo(ListaRotulos *LR, char* rotulo, int lineaRotulo);
@@ -46,19 +46,20 @@ __int32 recorreMnemonicos(elementosMnemonicos mnemonicos[],char* mnemonico);
 void strToUpper(char palabra[]);
 
 int main(int arg, char *args[])
-{
+{   
+    __int32 Memoria[4096]={0};
     int error=0; //equivale a 0 cuando no hay error, pasa a 1 cuando se encuentra un error
-    int i=0;    //checkear cuando hay que sumar el numero de linea y cuando no
+    int i=0,j=0;    //checkear cuando hay que sumar el numero de linea y cuando no
     __int32 header[6];
     elementosMnemonicos mnemonicos[25];
     ListaRotulos LR = NULL;
-    __int32 instruccionBin[1]={0X0};
+    __int32 instruccionBin=0X0;
     FILE *archI;
     FILE *archO;
     FILE *archTemp;
     archI=fopen(args[1],"rt");  //se abre el archivo de entrada para leer el programa assembler
-    archO = fopen(args[2],"wb"); //se abre el archivo de salida de la traduccion para escritura en binario
-    archTemp = fopen("temporal.bin","wb");
+    archO = fopen(args[2],"rwb"); //se abre el archivo de salida de la traduccion para escritura en binario
+    //archTemp = fopen("temporal.bin","wb");
 
     char **parsed;
     TRegistros Registros[16];
@@ -80,7 +81,6 @@ int main(int arg, char *args[])
         while (!feof(archI))
         {   
             //printf("[%04d]:\t",i);
-            error=0;
             char instruccionAss[256];
             fgets(instruccionAss,256,archI);
               //lee la linea correspondiente del archivo asm
@@ -88,34 +88,47 @@ int main(int arg, char *args[])
           // parseo(archI,parsed);
             int lineaVacia = parsed[0]==NULL && parsed[1]==NULL && parsed[2]==NULL && parsed[3]==NULL;
             if((!lineaVacia)){
-                Traduccion(parsed,instruccionBin,mnemonicos,LR,Registros,&error,i,args[3]);
-                fwrite(instruccionBin,sizeof(__int32),1,archTemp);
-            }  else {
-            
-            } 
-            freeline(parsed);
-
-            if(error){
-                //printf("Hubo un error\n");
-                while(!feof(archTemp)){
-                    __int32 instruccionTemp[1];
-                   fread(instruccionTemp,sizeof(__int32),1,archTemp);
-                    fwrite(instruccionTemp,sizeof(__int32),1,archO);
+                Traduccion(parsed,&instruccionBin,mnemonicos,LR,Registros,&error,i,args[3]);
+                Memoria[j++]=instruccionBin;
+            } else {
+                if(parsed[4]!=NULL && args[3]=="-o")
+                    printf("%s\n",parsed[4]);
                 }
-                
-            }
-            i++;
+                i++;
         }
-        
- 
-        
 
+        freeline(parsed);
+      
+        if(error==0){
+                //printf("Hubo un error\n");
+            fwrite(Memoria,sizeof(__int32),j+1,archO);
+        }
+
+        __int32 Memoria2[4096]={0};
+        fseek(archO,0,SEEK_SET);
+        fread(Memoria2,sizeof(__int32),j+1,archO);
+
+        for(int x=0;x<=j;x++){
+            printf("%08X\n",Memoria2[x]);
+        }
+
+        
     }
+    /*    
+    archO = fopen(args[2],"rb");
+    __int32 instruccion;
+    while (!feof(archO))
+    {
+        fread(&instruccion,sizeof(__int32),1,archO);
+        printf("%08X\n",instruccion);
+    }
+*/
     fclose(archI);
     fclose(archO);
-    fclose(archTemp);
+
 
     return 0;
+
 }
 
 void InicializaHeader(__int32 Header[]){
@@ -269,7 +282,7 @@ __int32 esRotulo(char ope[],ListaRotulos LR){
         return 0XFFF; // ERROR: no se encuentra el rotulo
 }
 
-void Traduccion(char **parsed,__int32 instruccionBin[],elementosMnemonicos mnemonicos[],ListaRotulos LR,TRegistros Registros[],int *error,int i,char *imprimir){
+void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemonicos[],ListaRotulos LR,TRegistros Registros[],int *error,int i,char *imprimir){
     
     //VERIFICAR EL ERROR DE SINTAXIS CUANDO NO ENCUENTRA UN MNEMONICO
     __int32 mnemonico,op1,op2;
