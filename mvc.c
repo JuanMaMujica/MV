@@ -36,10 +36,10 @@ __int32 DevuelveRegistro(char operando[],TRegistros Registros[]);
 __int32 esRotulo(char ope[],ListaRotulos LR);
 __int32 buscaRegistro(char operando[],TRegistros Registros[]);
 void InicializaRegistros(TRegistros Registros[]);
-void buscaRotulo(ListaRotulos *LR, FILE *archA);
+void buscaRotulo(ListaRotulos *LR, FILE *archA,int *contadorDS);
 void parseo(FILE *archA,char **parsed);
 void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemonicos[],ListaRotulos LR,TRegistros Registros[],int *error,int i,char *imprimir);
-void InicializaHeader(__int32 Header[]);
+void InicializaHeader(__int32 Header[],int contadorDS);
 void cargaMnemonicos(elementosMnemonicos mnemonicos[]);
 void ingresarRotulo(ListaRotulos *LR, char* rotulo, int lineaRotulo);
 __int32 recorreMnemonicos(elementosMnemonicos mnemonicos[],char* mnemonico);
@@ -49,33 +49,43 @@ int main(int arg, char *args[])
 {   
     __int32 Memoria[4096]={0};
     int error=0; //equivale a 0 cuando no hay error, pasa a 1 cuando se encuentra un error
-    int i=0,j=0;    //checkear cuando hay que sumar el numero de linea y cuando no
+    int i=0,j=6,contadorDS=0;    //checkear cuando hay que sumar el numero de linea y cuando no
     __int32 header[6];
     elementosMnemonicos mnemonicos[25];
     ListaRotulos LR = NULL;
     __int32 instruccionBin=0X0;
+    char imprimir[3];
     FILE *archI;
     FILE *archO;
     FILE *archTemp;
     archI=fopen(args[1],"rt");  //se abre el archivo de entrada para leer el programa assembler
     archO = fopen(args[2],"wb"); //se abre el archivo de salida de la traduccion para escritura en binario
-    //archTemp = fopen("temporal.bin","wb");
 
     char **parsed;
     TRegistros Registros[16];
 
     //Inicializamos las estructuras 
-    InicializaHeader(header);
+    
     cargaMnemonicos(mnemonicos);
     InicializaRegistros(Registros);
 
     //-------------------------------------------------------
     Registros[0].ValorRegistro=10;
+    if(arg==4){
+        strcpy(imprimir,args[3]);
+    } else {
+        strcpy(imprimir,"-null");
+    }
 
     if(archI!=NULL)     //si el archivo de entrada no existe o se genera algun error no hace nada
     {
-        buscaRotulo(&LR,archI);
+        buscaRotulo(&LR,archI,&contadorDS);
+        InicializaHeader(header,contadorDS);
         fseek(archI,0,SEEK_SET);
+
+            for (int i=0; i < 6; i++){
+                Memoria[i] = header[i];
+            }
       
 
         while (!feof(archI)){   
@@ -87,10 +97,10 @@ int main(int arg, char *args[])
           // parseo(archI,parsed);
             int lineaVacia = parsed[0]==NULL && parsed[1]==NULL && parsed[2]==NULL && parsed[3]==NULL;
             if((!lineaVacia)){
-                Traduccion(parsed,&instruccionBin,mnemonicos,LR,Registros,&error,i,args[3]);
+                Traduccion(parsed,&instruccionBin,mnemonicos,LR,Registros,&error,i,imprimir);
                 Memoria[j++]=instruccionBin;
             } else {
-                if(parsed[4]!=NULL && args[3]=="-o")
+                if(parsed[4]!=NULL && strcmp(imprimir,"-o")==0)
                     printf("%s\n",parsed[4]);
                 }
                 i++;
@@ -103,29 +113,22 @@ int main(int arg, char *args[])
             for(int x=0;x<j;x++){
                 printf("%08X\n",Memoria[x]);
             }
-            fwrite(Memoria,sizeof(__int32),j+1,archO);    
-        }
-        fclose(archO);
-
-        __int32 Memoria2[4096]={0};
-        archO = fopen(args[2],"rb");
-        printf("Memoria 2: \n");
-        fread(&Memoria2,sizeof(__int32),j+1,archO); 
-        for(int x=0;x<j;x++){
-            printf("%08X\n",Memoria2[x]);
+            fwrite(Memoria,sizeof(__int32),j,archO);   
+            fclose(archO);
+            __int32 Memoria2[4096]={0};
+            archO = fopen(args[2],"rb");
+            printf("Memoria 2: \n");
+            fread(&Memoria2,sizeof(__int32),j,archO); 
+            for(int x=0;x<j;x++){
+             printf("%08X\n",Memoria2[x]);
+            }
         }
 
         
+
+        
     }
-    /*    
-    archO = fopen(args[2],"rb");
-    __int32 instruccion;
-    while (!feof(archO))
-    {
-        fread(&instruccion,sizeof(__int32),1,archO);
-        printf("%08X\n",instruccion);
-    }
-*/
+
     fclose(archI);
     fclose(archO);
 
@@ -134,9 +137,9 @@ int main(int arg, char *args[])
 
 }
 
-void InicializaHeader(__int32 Header[]){
+void InicializaHeader(__int32 Header[],int contadorDS){
     Header[0] = 0x4D562D31;
-    Header[1] = 1024; //Corresponde al DS
+    Header[1] = contadorDS; //Corresponde al DS
     Header[2] = 0; 
     Header[3] = 0; 
     Header[4] = 0;
@@ -258,7 +261,7 @@ void strToUpper(char palabra[]){      //Pasa a mayusculas el string que le manda
 
 }
 
-void buscaRotulo(ListaRotulos *LR, FILE *archA){
+void buscaRotulo(ListaRotulos *LR, FILE *archA, int *contadorDS){
     char instruccionAss[256];
     char **parsed;
     int i=0;
@@ -272,6 +275,7 @@ void buscaRotulo(ListaRotulos *LR, FILE *archA){
         }
         freeline(parsed);
         i++;
+        *contadorDS = i;
     }
 }
 
