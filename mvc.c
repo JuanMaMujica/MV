@@ -314,6 +314,7 @@ void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemon
             tipoOpe1 = tipoOperando(op1String,LR);
             tipoOpe2 = tipoOperando(op2String,LR);
             op1 =transformaOperando(op1String,tipoOpe1,Registros,LR);
+           // printf("%08X\n",op1);
 
             if (tipoOpe1==0){
                 if(op1>0XFFF){
@@ -324,10 +325,12 @@ void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemon
             op2 =transformaOperando(op2String,tipoOpe2,Registros,LR);
 
             if (tipoOpe2==0){
-                if(op2>0XFFF){
+                if(op2>2047 || op2<-2048){
                     op2 = op2 & 0XFFF;
                     printf("WARNING: operando truncado \n");
-                } 
+                } else if(op2 < 0 && op2>-2048){
+                    op2 = op2 & 0XFFF;
+                }
             } 
          //   printf("%d %d\n",op1 ,op2);
             *instruccionBin = (mnemonico<<28) | ((tipoOpe1<<26) & 0x0C000000) | ((tipoOpe2<<24) & 0x03000000) | ((op1<<12)) | (op2);
@@ -476,7 +479,7 @@ __int32 DevuelveRegistro(char operando[],TRegistros Registros[]){
     int condicion;
 
     strToUpper(operando);
-
+    printf("%s\n",operando);
     //buscaRegistro 
     res = buscaRegistro(operando,Registros);
     if (res!=-1){ //registros de la primer columna (32 bits)

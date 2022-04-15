@@ -1,9 +1,9 @@
 not [3000]; agregado por pao
 xor EFX,FX
 mov [#20],0
-mov EAX,%001
-mov EDX,999999999
+mov EDX,%001
 mov ECX,1
+mov EDX,200
 Otro: sys 1
 cmp [%10],0
 add [2],[1]
