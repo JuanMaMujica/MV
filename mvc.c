@@ -58,7 +58,7 @@ int main(int arg, char *args[])
     FILE *archO;
     FILE *archTemp;
     archI=fopen(args[1],"rt");  //se abre el archivo de entrada para leer el programa assembler
-    archO = fopen(args[2],"rwb"); //se abre el archivo de salida de la traduccion para escritura en binario
+    archO = fopen(args[2],"wb"); //se abre el archivo de salida de la traduccion para escritura en binario
     //archTemp = fopen("temporal.bin","wb");
 
     char **parsed;
@@ -78,8 +78,7 @@ int main(int arg, char *args[])
         fseek(archI,0,SEEK_SET);
       
 
-        while (!feof(archI))
-        {   
+        while (!feof(archI)){   
             //printf("[%04d]:\t",i);
             char instruccionAss[256];
             fgets(instruccionAss,256,archI);
@@ -100,15 +99,19 @@ int main(int arg, char *args[])
         freeline(parsed);
       
         if(error==0){
-                //printf("Hubo un error\n");
-            fwrite(Memoria,sizeof(__int32),j+1,archO);
+            printf("No hubo un error\n");
+            for(int x=0;x<j;x++){
+                printf("%08X\n",Memoria[x]);
+            }
+            fwrite(Memoria,sizeof(__int32),j+1,archO);    
         }
+        fclose(archO);
 
         __int32 Memoria2[4096]={0};
-        fseek(archO,0,SEEK_SET);
-        fread(Memoria2,sizeof(__int32),j+1,archO);
-
-        for(int x=0;x<=j;x++){
+        archO = fopen(args[2],"rb");
+        printf("Memoria 2: \n");
+        fread(&Memoria2,sizeof(__int32),j+1,archO); 
+        for(int x=0;x<j;x++){
             printf("%08X\n",Memoria2[x]);
         }
 

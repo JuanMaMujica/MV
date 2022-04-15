@@ -1,13 +1,11 @@
 not [3000]; agregado por pao
-Yxor EFX,FX
+xor EFX,FX
 mov [#20],0
 mov EAX,%001
-jp Marcelo
 mov EDX,999999999
 mov ECX,1
 Otro: sys 1
 cmp [%10],0
-jn sigue
 add [2],[1]
 Fin: add EFX,1
 NOT EEX; agregado por pao
