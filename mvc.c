@@ -38,7 +38,7 @@ __int32 buscaRegistro(char operando[],TRegistros Registros[]);
 void InicializaRegistros(TRegistros Registros[]);
 void buscaRotulo(ListaRotulos *LR, FILE *archA);
 void parseo(FILE *archA,char **parsed);
-void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemonicos[],ListaRotulos LR,TRegistros Registros[],int *error,int i);
+void Traduccion(char **parsed,__int32 instruccionBin[],elementosMnemonicos mnemonicos[],ListaRotulos LR,TRegistros Registros[],int *error,int i,char *imprimir);
 void InicializaHeader(__int32 Header[]);
 void cargaMnemonicos(elementosMnemonicos mnemonicos[]);
 void ingresarRotulo(ListaRotulos *LR, char* rotulo, int lineaRotulo);
@@ -52,7 +52,7 @@ int main(int arg, char *args[])
     __int32 header[6];
     elementosMnemonicos mnemonicos[25];
     ListaRotulos LR = NULL;
-    __int32 instruccionBin=0x0;
+    __int32 instruccionBin[1]={0X0};
     FILE *archI;
     FILE *archO;
     FILE *archTemp;
@@ -75,18 +75,21 @@ int main(int arg, char *args[])
     {
         buscaRotulo(&LR,archI);
         fseek(archI,0,SEEK_SET);
+      
+
         while (!feof(archI))
         {   
-            printf("[%04d]:\t",i);
+            //printf("[%04d]:\t",i);
             error=0;
             char instruccionAss[256];
-            fgets(instruccionAss,256,archI);  //lee la linea correspondiente del archivo asm
+            fgets(instruccionAss,256,archI);
+              //lee la linea correspondiente del archivo asm
             parsed = parseline(instruccionAss);
           // parseo(archI,parsed);
             int lineaVacia = parsed[0]==NULL && parsed[1]==NULL && parsed[2]==NULL && parsed[3]==NULL;
             if((!lineaVacia)){
-                Traduccion(parsed,&instruccionBin,mnemonicos,LR,Registros,&error,i);
-              //  fwrite(instruccionBin,sizeof(__int32),1,archTemp);
+                Traduccion(parsed,instruccionBin,mnemonicos,LR,Registros,&error,i,args[3]);
+                fwrite(instruccionBin,sizeof(__int32),1,archTemp);
             }  else {
             
             } 
@@ -94,12 +97,12 @@ int main(int arg, char *args[])
 
             if(error){
                 //printf("Hubo un error\n");
-              /*
-                __int32 instruccionTemp[256];
-                while(fgets(instruccionTemp,256,archTemp)){
+                while(!feof(archTemp)){
+                    __int32 instruccionTemp[1];
+                   fread(instruccionTemp,sizeof(__int32),1,archTemp);
                     fwrite(instruccionTemp,sizeof(__int32),1,archO);
                 }
-                */
+                
             }
             i++;
         }
@@ -109,6 +112,8 @@ int main(int arg, char *args[])
 
     }
     fclose(archI);
+    fclose(archO);
+    fclose(archTemp);
 
     return 0;
 }
@@ -264,12 +269,18 @@ __int32 esRotulo(char ope[],ListaRotulos LR){
         return 0XFFF; // ERROR: no se encuentra el rotulo
 }
 
-void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemonicos[],ListaRotulos LR,TRegistros Registros[],int *error,int i){
+void Traduccion(char **parsed,__int32 instruccionBin[],elementosMnemonicos mnemonicos[],ListaRotulos LR,TRegistros Registros[],int *error,int i,char *imprimir){
     
     //VERIFICAR EL ERROR DE SINTAXIS CUANDO NO ENCUENTRA UN MNEMONICO
     __int32 mnemonico,op1,op2;
     int tipoOpe1,tipoOpe2;
     //error=0;
+    char comentario[]=";";
+        if(parsed[4]!=NULL){
+            strcat(comentario,parsed[4]); 
+        } else {
+            comentario[0]=' ';
+        }
   
     mnemonico=recorreMnemonicos(mnemonicos,parsed[1]);
    // printf("Traduccion: %X\n",mnemonico);
@@ -287,7 +298,7 @@ void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemon
             if (tipoOpe1==0){
                 if(op1>0XFFF){
                     op1 = op1 & 0XFFF;
-                    printf("El operando 1 fue truncado \t");
+                    printf("WARNING: operando truncado \n");
                 }
             }  
             op2 =transformaOperando(op2String,tipoOpe2,Registros,LR);
@@ -295,12 +306,13 @@ void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemon
             if (tipoOpe2==0){
                 if(op2>0XFFF){
                     op2 = op2 & 0XFFF;
-                    printf("El operando 2 fue truncado");
+                    printf("WARNING: operando truncado \n");
                 } 
             } 
          //   printf("%d %d\n",op1 ,op2);
             *instruccionBin = (mnemonico<<28) | ((tipoOpe1<<26) & 0x0C000000) | ((tipoOpe2<<24) & 0x03000000) | ((op1<<12)) | (op2);
-            printf("%02X %02X %02X %02X\t\t%d: %s\t\t%s, %s\t\t%s\n",(*instruccionBin>>24) & 0XFF,(*instruccionBin>>16)&0XFF,(*instruccionBin>>8)&0XFF,*instruccionBin & 0XFF ,i+1,parsed[1],parsed[2],parsed[3],parsed[4]);
+            if(strcmp(imprimir,"-o")==0) 
+                printf("[%04d]:\t%02X %02X %02X %02X\t\t%d: %s\t\t%s, %s\t\t%s\n",i,(*instruccionBin>>24) & 0XFF,(*instruccionBin>>16)&0XFF,(*instruccionBin>>8)&0XFF,*instruccionBin & 0XFF ,i+1,parsed[1],parsed[2],parsed[3],comentario);
          //   printf("%08X  \n", *instruccionBin);
 
             //Bloque de dos operandos
@@ -318,13 +330,20 @@ void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemon
             if (tipoOpe1==0){
                 if(op1>0XFFFF){
                     op1 = op1 & 0XFFFF;
-                    printf("Tu unico operando fue truncado \t");
+                    printf("WARNING: operando truncado \n");
                 }
             }
 
          //   printf("Operando= %d\n",op1);
             *instruccionBin = ((mnemonico << 24) & 0XFF000000) | ((tipoOpe1 << 22) & 0x00C00000) | (op1);
-            printf("%02X %02X %02X %02X\t\t%d: %s\t\t%s\t\t%s\n",(*instruccionBin>>24) & 0XFF,(*instruccionBin>>16)&0XFF,(*instruccionBin>>8)&0XFF,*instruccionBin & 0XFF ,i+1,parsed[1],parsed[2],parsed[4]);
+            char comentario[]=";";
+            if(parsed[4]!=NULL){
+                strcat(comentario,parsed[4]); 
+            } else {
+                comentario[0]=' ';
+            }
+            if(strcmp(imprimir,"-o")==0)
+                printf("[%04d]:\t%02X %02X %02X %02X\t\t%d: %s\t\t%s\t\t%s\n",i,(*instruccionBin>>24) & 0XFF,(*instruccionBin>>16)&0XFF,(*instruccionBin>>8)&0XFF,*instruccionBin & 0XFF ,i+1,parsed[1],parsed[2],comentario);
             //Bloque de 1 operando
         }
 
@@ -334,11 +353,15 @@ void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemon
             if(mnemonico==0XFFFFFFFF){
                 *error=1;
                 *instruccionBin = mnemonico;
+                printf("La siguiente instruccion tiene un error de sintaxis: \n");
             }
             else
                 *instruccionBin = (mnemonico<<20) & 0XFFF00000;
-        printf("%X\n",*instruccionBin); 
+        //printf("%X\n",*instruccionBin);
+        if(strcmp(imprimir,"-o")==0)
+            printf("[%04d]:\t%02X %02X %02X %02X\t\t%d: %s\t\t\t\t%s\n",i,(*instruccionBin>>24) & 0XFF,(*instruccionBin>>16)&0XFF,(*instruccionBin>>8)&0XFF,*instruccionBin & 0XFF, i+1,parsed[1],comentario);
     }
+     
     
 
 }

@@ -1,4 +1,4 @@
-not [3000]; ; agregado por pao
+not [3000]; agregado por pao
 Yxor EFX,FX
 mov [#20],0
 mov EAX,%001
