@@ -70,7 +70,7 @@ int main(int arg, char *args[])
     InicializaRegistros(Registros);
 
     //-------------------------------------------------------
-
+    Registros[0].ValorRegistro=10;
     if(arg==4){
         strcpy(imprimir,args[3]);
     } else {

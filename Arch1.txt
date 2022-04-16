@@ -1,4 +1,6 @@
-mov EAX, 5
-mov [20],-10                  
-add [20],AL
-stop
+mov EAX, 3000
+mov AX, 50
+mov EBX,AH
+mov ECX,AL
+mov [20],AX
+STOP
