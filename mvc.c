@@ -109,29 +109,19 @@ int main(int arg, char *args[])
         freeline(parsed);
       
         if(error==0){
-            printf("No hubo un error\n");
+            /*printf("No hubo un error\n");
             for(int x=0;x<j;x++){
                 printf("%08X\n",Memoria[x]);
-            }
+            }*/
             fwrite(Memoria,sizeof(__int32),j,archO);   
-            fclose(archO);
-            __int32 Memoria2[4096]={0};
-            archO = fopen(args[2],"rb");
-            printf("Memoria 2: \n");
-            fread(&Memoria2,sizeof(__int32),j,archO); 
-            for(int x=0;x<j;x++){
-             printf("%08X\n",Memoria2[x]);
-            }
         }
 
         
 
         
     }
-
-    fclose(archI);
     fclose(archO);
-
+    fclose(archI);
 
     return 0;
 
@@ -392,7 +382,6 @@ void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemon
 __int32 DevuelveInmediato(char operando[], ListaRotulos LR){
         char *ope;
 
-        int es_hexa_u_octal=0;
         if(operando[0]== '-' || (operando[0] >= '0' && operando[0] <= '9'))
             return atoi(operando);
         else{
@@ -410,12 +399,10 @@ __int32 DevuelveInmediato(char operando[], ListaRotulos LR){
                         return (int) operando[1];
                         break;
                     case '@':
-                        es_hexa_u_octal = 1;
                         ope = &operando[1];
                         return strtoul(ope, NULL, 8);
                         break;
                     case '%':
-                        es_hexa_u_octal = 1;
                         ope = &operando[1];
                         return strtoul(ope, NULL, 16);
                         break;
@@ -442,7 +429,6 @@ __int32 DevuelveDirecto(char operando[], TRegistros Registros[]){
     ope = &operando[1];
     ope[strlen(ope)-1]='\0';
    // printf("%s",ope);
-    int es_hexa_u_octal=0;
     if(ope[0] >= '0' && ope[0] <= '9'){
          return (atoi(ope) + Registros[0].ValorRegistro);
     }else{
@@ -455,12 +441,10 @@ __int32 DevuelveDirecto(char operando[], TRegistros Registros[]){
                 return (int) ope[1] + Registros[0].ValorRegistro;
                 break;
             case '@':
-                es_hexa_u_octal = 1;
                 ope = &ope[1];
                 return strtoul(ope, NULL, 8) + Registros[0].ValorRegistro;
                 break;
             case '%':
-                es_hexa_u_octal = 1;
                 ope = &ope[1];
                 return strtoul(ope, NULL, 16) + Registros[0].ValorRegistro;
                 break;
@@ -479,7 +463,7 @@ __int32 DevuelveRegistro(char operando[],TRegistros Registros[]){
     int condicion;
 
     strToUpper(operando);
-    printf("%s\n",operando);
+    //printf("%s\n",operando);
     //buscaRegistro 
     res = buscaRegistro(operando,Registros);
     if (res!=-1){ //registros de la primer columna (32 bits)
