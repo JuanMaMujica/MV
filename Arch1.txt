@@ -1,5 +1,6 @@
 mov EDX, 20
 mov CX, 5
 mov AX,%001
+jmp fin
 sys %1
-STOP
+fin: STOP

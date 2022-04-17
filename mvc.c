@@ -385,7 +385,7 @@ __int32 DevuelveInmediato(char operando[], ListaRotulos LR){
         if(operando[0]== '-' || (operando[0] >= '0' && operando[0] <= '9'))
             return atoi(operando);
         else{
-            if(operando[0]>=65 && operando[0]<=90){
+            if(operando[0]>=65 && operando[0]<=90 || (operando[0]>=97 && operando[0]<=122)){
                 return esRotulo(operando,LR);
             } else {
                 switch(operando[0]){ //Con esto vamos a devolver el valor en decimal.
