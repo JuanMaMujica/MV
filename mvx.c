@@ -146,6 +146,71 @@ void not(__int32 *a){
 
 void sys(__int32 *a){
 
+    int i,j=0,x,ax=Registros[0xA].ValorRegistro & 0XFFFF;
+    int cx=Registros[0xC].ValorRegistro & 0XFFFF;
+    int ds=Registros[0].ValorRegistro;
+    int edx=Registros[0xD].ValorRegistro;
+    char straux[30];
+
+    if (*a == 0X1){
+        if (ax & 0x100){     //bit vale 1
+            if (!(ax & 0x800)){                             // muestra prompt. si vale 1, no entra.
+                printf("[%d]:\t", edx+ds+j);
+            } 
+            scanf("%s", straux);
+            while (j<cx && j<strlen(straux)){
+                Memoria[edx+ds+j]=straux[j++]; 
+            }
+            if(j<cx && j==strlen(straux))
+                Memoria[edx+ds+j]=0X0;       
+        } else{
+            for(i=0x0;i<cx;i++){     // CX=0x3C  
+                if (!(ax & 0x800)){                                    // muestra prompt. si vale 1, no entra.
+                    printf("[%d]:\t ", edx+ds+i);
+                }  
+                if (ax & 0x008){
+                    scanf("%x", &x);
+                    Memoria[edx+ds+i]=x;
+                } else if (ax & 0x004){
+                    scanf("%o", &x);
+                    Memoria[edx+ds+i]=x;
+                } else if (ax & 0x001){
+                    scanf("%d", &x);
+                    Memoria[edx+ds+i]=x;
+                }
+            }
+        }
+    } else if(*a == 0X2){
+        if (ax & 0x100){     //bit vale 1
+            if (!(ax & 0x800)){                             // muestra prompt. si vale 1, no entra.
+                printf("[%d]:\t", edx+ds+j);
+            } 
+            while (j<cx && j<strlen(straux)){
+                Memoria[edx+ds+j]=straux[j++]; 
+            }
+            if(j<cx && j==strlen(straux))
+                printf("" ,Memoria[edx+ds+j]);       
+        } else{
+            for(i=0x0;i<cx;i++){     // CX=0x3C  
+                if (!(ax & 0x800)){                                    // muestra prompt. si vale 1, no entra.
+                    printf("[%d]:\t ", edx+ds+i);
+                }  
+                if (ax & 0x008){
+                    scanf("%x", &x);
+                    Memoria[edx+ds+i]=x;
+                } else if (ax & 0x004){
+                    scanf("%o", &x);
+                    Memoria[edx+ds+i]=x;
+                } else if (ax & 0x001){
+                    scanf("%d", &x);
+                    Memoria[edx+ds+i]=x;
+                }
+            }
+        }
+
+    } else if(*a == 0XF){
+
+    }
 }
 
 void stop(){
@@ -259,12 +324,13 @@ void leeInstruccion(){
     int cantidadOperandos=0;
     int ip=Registros[5].ValorRegistro;
     int ds=Registros[0].ValorRegistro;
-    __int32 instruccion,mnemonico,tipoOp1,tipoOp2,op1,op2,valorOp1,valorOp2;
+    __int32 instruccion,mnemonico,tipoOp1,tipoOp2,op1,op2,valorOp1,valorOp2,sectorOp2;
     void (*fun[])(__int32 *, __int32 *) = {mov, add, sub,swap,mul,DIV,cmp,shl,shr,and,or,xor};
     void (*fun2[])(__int32 *) = {sys,jmp, jz,jp,JN,jnz,jnp,jnn,ldl,ldh,rnd,not};
 
-    while (Registros[5].ValorRegistro>=0 && Registros[5].ValorRegistro<ds){
-        instruccion = Memoria[ip];
+    while (Registros[5].ValorRegistro>=0 && Registros[5].ValorRegistro<Registros[0].ValorRegistro){
+       // printf("%d\n",Registros[0].ValorRegistro);
+        instruccion = Memoria[Registros[5].ValorRegistro];
         Registros[5].ValorRegistro++;
         mnemonico = leeMnemonico(instruccion,&cantidadOperandos);
         if(cantidadOperandos == 2){
@@ -274,8 +340,27 @@ void leeInstruccion(){
             op2 = instruccion & 0XFFF;
             valorOp1 = decodificaOperando(op1,tipoOp1);
             valorOp2 = decodificaOperando(op2,tipoOp2);
-            valorOp2=valorOp2<<20;  //propaga el bit de signo de un operando inmediato negativo, de ser positivo no importa el corrimiento queda igual
-            valorOp2=valorOp2>>20;
+            sectorOp2 = op2>>4 & 0X3;
+            if(tipoOp2 == 0){
+                valorOp2=valorOp2<<20;  //propaga el bit de signo de un operando inmediato negativo, de ser positivo no importa el corrimiento queda igual
+                valorOp2=valorOp2>>20;  
+            } else if(tipoOp2 == 1) {
+                switch (sectorOp2){
+                case 1:
+                    valorOp2 = valorOp2<<24;
+                    valorOp2 = valorOp2>>24;
+                    break;
+                case 2:
+                    valorOp2 = valorOp2<<24;
+                    valorOp2 = valorOp2>>24;
+                    break;
+                case 3:
+                    valorOp2 = valorOp2<<16;
+                    valorOp2 = valorOp2>>16;
+                default:
+                    break;
+                }
+            }
 
             (*fun[mnemonico])(&valorOp1,&valorOp2); //llama a la instruccion correspondiente dependiendo del mnemonico
             if(mnemonico!=0X6){ // alamcena los valores calculados anteriormente en los registros o memoria correspondiente menos en el cmp 
@@ -291,7 +376,8 @@ void leeInstruccion(){
             tipoOp1 = (instruccion>>22) & 0X3;
             op1 = instruccion & 0XFFFF; 
             valorOp1 = decodificaOperando(op1,tipoOp1);
-            (*fun2[(mnemonico>>24)&0XF])(&valorOp1);
+            printf("%08X\t%08X",(mnemonico>>24)&0XF),valorOp1;
+            (*fun2[((mnemonico>>24)&0XF)])(&valorOp1);
             if (mnemonico==0XFA || mnemonico==0XFB){   // RND, NOT
                 alamacenaRM(valorOp1,tipoOp1,op1);
             }
@@ -370,11 +456,11 @@ void alamacenaRM(__int32 valorOp, __int32 tipoOp, __int32 op){
         } else if(sectorRegistro==3){
             Registros[registro].ValorRegistro = (Registros[registro].ValorRegistro & 0XFFFF0000) | (valorOp & 0XFFFF);
         }
-        printf("%08X\n",Registros[registro].ValorRegistro);
+        printf("%08X\t%08X\n",registro,Registros[registro].ValorRegistro);
       
     } else if(tipoOp == 2){
         Memoria[op+Registros[0].ValorRegistro] = valorOp;
-        printf("%08X\n",Memoria[op+Registros[0].ValorRegistro]);
+        printf("%d\t%08X\n",op+Registros[0].ValorRegistro,Memoria[op+Registros[0].ValorRegistro]);
     }
 
     
