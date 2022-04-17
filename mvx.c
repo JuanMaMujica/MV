@@ -15,17 +15,24 @@ typedef struct {
     __int32 cod;
 } elementosMnemonicos;
 
+
+elementosMnemonicos mnemonicos[25];
 TRegistros Registros[16];
 __int32 Memoria[cantidadMR]={0};
+int banderas[5] = {0};
+int breakpoint = 0;
 
 //--------------------------------------Prototipos---------------------------------------------------
 void InicializaRegistros(TRegistros Registros[]);
-void cargaMnemonicos(elementosMnemonicos mnemonicos[]);
+void cargaMnemonicos();
 void leeInstruccion();
 void cambiaCC(__int32 valorOp1);
 __int32 leeMnemonico(__int32 instruccion,int *cantidadOperandos);
 __int32 decodificaOperando(__int32 op, __int32 tipoOp);
 void alamacenaRM(__int32 valorOp, __int32 tipoOp, __int32 op);
+void MuestraCodigo();
+void Dissasembler(int pos_memoria);
+
 
 //-------------------------------------------OPERACIONES--------------------------------------------------
 void mov(__int32 *a, __int32 *b){
@@ -146,11 +153,11 @@ void not(__int32 *a){
 
 void sys(__int32 *a){
 
-    int i,j=0,x,ax=Registros[0xA].ValorRegistro & 0XFFFF;
+    int i,j=0,x,y,ax=Registros[0xA].ValorRegistro & 0XFFFF;
     int cx=Registros[0xC].ValorRegistro & 0XFFFF;
     int ds=Registros[0].ValorRegistro;
     int edx=Registros[0xD].ValorRegistro;
-    char straux[30];
+    char straux[30],car[4],num1[4],num2[4];
 
     if (*a == 0X1){
         if (ax & 0x100){     //bit vale 1
@@ -180,36 +187,71 @@ void sys(__int32 *a){
                 }
             }
         }
-    } else if(*a == 0X2){
-        if (ax & 0x100){     //bit vale 1
-            if (!(ax & 0x800)){                             // muestra prompt. si vale 1, no entra.
-                printf("[%d]:\t", edx+ds+j);
-            } 
-            while (j<cx && j<strlen(straux)){
-                Memoria[edx+ds+j]=straux[j++]; 
+    } else if (*a==2){           //sys 2
+        for (i=0;i<cx;i++){
+            if (!(ax & 0x800)){
+                printf("[%d]:\t", edx+ds+i);     
             }
-            if(j<cx && j==strlen(straux))
-                printf("" ,Memoria[edx+ds+j]);       
-        } else{
-            for(i=0x0;i<cx;i++){     // CX=0x3C  
-                if (!(ax & 0x800)){                                    // muestra prompt. si vale 1, no entra.
-                    printf("[%d]:\t ", edx+ds+i);
-                }  
-                if (ax & 0x008){
-                    scanf("%x", &x);
-                    Memoria[edx+ds+i]=x;
-                } else if (ax & 0x004){
-                    scanf("%o", &x);
-                    Memoria[edx+ds+i]=x;
-                } else if (ax & 0x001){
-                    scanf("%d", &x);
-                    Memoria[edx+ds+i]=x;
+            if (ax & 0x010){ 
+                if (Memoria[edx+ds+i]<=0x7E && Memoria[edx+ds+i]>=0x20)  //si es imprimible printeo como char (creo que estos son los caracteres imprimibles, pero no se)
+                    printf("%c", Memoria[edx+ds+i] & 0xFF);
+                else
+                    printf(".");  //si no es imprimible printeo un punto
+            } else if (ax & 0x008){
+                printf("%x", Memoria[edx+ds+i]);
+            } else if (ax & 0x004){
+                printf("%o", Memoria[edx+ds+i]);
+            } else if (ax & 0x001){
+                printf("%d", Memoria[edx+ds+i]);
+            }
+            if (!(ax & 0x100)){     //si el bit 8 vale 0, agrego salto de línea despues de imprimir
+                printf("\n");
+            } 
+        }
+    } else{         //sys f
+        if (banderas[0]) {   //si está -b
+            printf("[%d] cmd: ",Registros[5].ValorRegistro);
+            fflush(stdin);    //muestro el ip en el prompt
+            gets(car);      //trabajare como string a lo que entre por comodidad
+            if (car[0]=='p'){
+                breakpoint = 1;
+                    //se me ocurre una variable global que entre a sys f desde ejecucion
+                    //y se setee en 1 cada vez que ponemos 'p'?
+            } else if (car[0]>='0' && car[0]<='9'){          //si el primer caracter es un numero // quizá haya alguna funcion para hacer esto menos peruano xD
+                breakpoint = 0;
+                i=0;
+                while (car[i]!='\0' && car[i]!=' '){    //concateno el numero en el array num1 hasta que haya espacio o no haya nada (ya se que no sera negativo)
+                    num1[i]=car[i];
+                    i++;
                 }
+                x=atoi(num1);         //convierto num1 a integer
+                if (car[i]=='\0')    //si no hay nada, entonces no hay segundo numero
+                    printf("[%d]: Hexa: %x Decimal: %d \n", x, Memoria[x], Memoria[x]);
+                 else if (car[i]==' '){    //si hay espacio, hay segundo numero. no validé que entre otra cosa
+                    j=0;
+                    while(car[i]!='\0'){      //mientras no sea nulo, concateno en num2
+                        num2[j]=car[i];
+                        i++;
+                    }
+                    y=atoi(num2);       //convierto num2 a int
+                    if (y>0 && x<y){      //si y es un entero positivo printeo entre x e y.
+                        for (i=x;i<=y;i++){
+                            printf("[%d]: Hexa; %x  Decimal: %d", i, Memoria[i], Memoria[i]);
+                        }
+                    }
+                }
+            } else if (car[0]=='r'){
+                breakpoint = 0;
+                //printf("Continuando ejecucion...");
             }
         }
-
-    } else if(*a == 0XF){
-
+        if (banderas[1]){
+            system("cls");    //me copié de su mv vieja
+        }
+        if (banderas[2]){
+            MuestraCodigo();
+            //disassembler, nazi
+        }
     }
 }
 
@@ -222,42 +264,56 @@ void stop(){
 
 void main(int arg,char *args[]){
     
-    elementosMnemonicos Mnemonicos[25];
     __int32 Header[6]={0};
     FILE *archI;
     archI = fopen(args[1],"rb");
 
     InicializaRegistros(Registros);
+    cargaMnemonicos();
+    fread(Header,sizeof(__int32),6,archI);
+    fread(Memoria,sizeof(__int32),Header[1],archI);
+    Registros[0].ValorRegistro = Header[1];
+    
 
-    if(archI!=NULL){
-        fread(Header,sizeof(__int32),6,archI);
-        fread(Memoria,sizeof(__int32),Header[1],archI);
-        Registros[0].ValorRegistro = Header[1];
-
-        leeInstruccion();
-
-       /*
-        for (int i=0; i < Header[1]; i++)
-        {
-            printf("%08X\n",Memoria[i]);
+    if(archI!=NULL){    
+        if (arg>1){ //Si hay banderas, se fija cuáles están.
+            for (int i=2; i < arg; i++){
+                if (strcmp(args[i], "-b") == 0){
+                    banderas[0] = 1;
+                }
+                if (strcmp(args[i], "-c") == 0){
+                    banderas[1] = 1;
+                }
+                if (strcmp(args[i], "-d") == 0){
+                    banderas[2] = 1;
+                }
+            }
         }
-        */
+        if(banderas[1]){
+            system("cls");
+        }
+        if(banderas[2]){
+            MuestraCodigo();
+        }
+        leeInstruccion();
+  
+
     }
 
 
 }
 
 void InicializaRegistros(TRegistros Registros[]){
-    strcpy(Registros[0].nombre,"DS"); Registros[0].ValorRegistro=0;
-    strcpy(Registros[1].nombre,"SS"); Registros[1].ValorRegistro=0;
-    strcpy(Registros[2].nombre,"ES"); Registros[2].ValorRegistro=0;
-    strcpy(Registros[3].nombre,"CS"); Registros[3].ValorRegistro=0;
-    strcpy(Registros[4].nombre,"HP"); Registros[4].ValorRegistro=0;
-    strcpy(Registros[5].nombre,"IP"); Registros[5].ValorRegistro=0;
-    strcpy(Registros[6].nombre,"SP"); Registros[6].ValorRegistro=0;
-    strcpy(Registros[7].nombre,"BP"); Registros[7].ValorRegistro=0;
-    strcpy(Registros[8].nombre,"CC"); Registros[8].ValorRegistro=0;
-    strcpy(Registros[9].nombre,"AC"); Registros[9].ValorRegistro=0;
+    strcpy(Registros[0].nombre,"DS "); Registros[0].ValorRegistro=0;
+    strcpy(Registros[1].nombre,"   "); Registros[1].ValorRegistro=0;
+    strcpy(Registros[2].nombre,"   "); Registros[2].ValorRegistro=0;
+    strcpy(Registros[3].nombre,"   "); Registros[3].ValorRegistro=0;
+    strcpy(Registros[4].nombre,"   "); Registros[4].ValorRegistro=0;
+    strcpy(Registros[5].nombre,"IP "); Registros[5].ValorRegistro=0;
+    strcpy(Registros[6].nombre,"   "); Registros[6].ValorRegistro=0;
+    strcpy(Registros[7].nombre,"   "); Registros[7].ValorRegistro=0;
+    strcpy(Registros[8].nombre,"CC "); Registros[8].ValorRegistro=0;
+    strcpy(Registros[9].nombre,"AC "); Registros[9].ValorRegistro=0;
     strcpy(Registros[10].nombre,"EAX"); Registros[10].ValorRegistro=0;
     strcpy(Registros[11].nombre,"EBX"); Registros[11].ValorRegistro=0;
     strcpy(Registros[12].nombre,"ECX"); Registros[12].ValorRegistro=0;
@@ -266,7 +322,7 @@ void InicializaRegistros(TRegistros Registros[]){
     strcpy(Registros[15].nombre,"EFX"); Registros[15].ValorRegistro=0;
 }
 
-void cargaMnemonicos(elementosMnemonicos mnemonicos[])  //funcion que carga los mnemonicos con sus respectivos codigos en un arreglo
+void cargaMnemonicos()  //funcion que carga los mnemonicos con sus respectivos codigos en un arreglo
 {
     mnemonicos[0].cod=0X0;
     strcpy(mnemonicos[0].mnemonico,"MOV");
@@ -321,6 +377,7 @@ void cargaMnemonicos(elementosMnemonicos mnemonicos[])  //funcion que carga los 
 }
 
 void leeInstruccion(){
+    __int32 sysB=0XF;
     int cantidadOperandos=0;
     int ip=Registros[5].ValorRegistro;
     int ds=Registros[0].ValorRegistro;
@@ -361,7 +418,6 @@ void leeInstruccion(){
                     break;
                 }
             }
-
             (*fun[mnemonico])(&valorOp1,&valorOp2); //llama a la instruccion correspondiente dependiendo del mnemonico
             if(mnemonico!=0X6){ // alamcena los valores calculados anteriormente en los registros o memoria correspondiente menos en el cmp 
                 alamacenaRM(valorOp1,tipoOp1,op1);
@@ -376,7 +432,6 @@ void leeInstruccion(){
             tipoOp1 = (instruccion>>22) & 0X3;
             op1 = instruccion & 0XFFFF; 
             valorOp1 = decodificaOperando(op1,tipoOp1);
-            printf("%08X\t%08X",(mnemonico>>24)&0XF),valorOp1;
             (*fun2[((mnemonico>>24)&0XF)])(&valorOp1);
             if (mnemonico==0XFA || mnemonico==0XFB){   // RND, NOT
                 alamacenaRM(valorOp1,tipoOp1,op1);
@@ -386,6 +441,9 @@ void leeInstruccion(){
             }
         } else {
             stop();
+        }
+        if(breakpoint == 1){
+            sys(&sysB);
         }
 
     }
@@ -456,16 +514,134 @@ void alamacenaRM(__int32 valorOp, __int32 tipoOp, __int32 op){
         } else if(sectorRegistro==3){
             Registros[registro].ValorRegistro = (Registros[registro].ValorRegistro & 0XFFFF0000) | (valorOp & 0XFFFF);
         }
-        printf("%08X\t%08X\n",registro,Registros[registro].ValorRegistro);
       
     } else if(tipoOp == 2){
         Memoria[op+Registros[0].ValorRegistro] = valorOp;
-        printf("%d\t%08X\n",op+Registros[0].ValorRegistro,Memoria[op+Registros[0].ValorRegistro]);
     }
-
-    
-
 }
 
+void MuestraCodigo(){
+    printf("Codigo:");
+    for (int i = 0; i < Registros[0].ValorRegistro; i++)
+        Dissasembler(i);
+    //MUESTRA DE REGISTROS
+    printf("\nRegistros:\n");
+    for(int j = 0; j < 16; j++){
+        printf("%2s = %12d |", Registros[j].nombre, Registros[j].ValorRegistro);
+        if (j % 4 == 3)
+            printf("\n");
+    }
+}
 
+void Dissasembler(int pos_memoria){
+    __int32 inst=Memoria[pos_memoria],op,sectorReg,nroMnemonico;
 
+    if((pos_memoria == Registros[5].ValorRegistro) && Registros[5].ValorRegistro != 0)
+        printf("\n>");
+    else
+        printf("\n ");
+    printf("[%04d]: %02X %02X %02X %02X  %3d: ",pos_memoria,(inst>>24)&0x000000FF,(inst>>16)&0x000000FF,(inst>>8)&0x000000FF,(inst&0x000000FF),pos_memoria+1);
+
+    if((inst & 0xFF000000) == 0xFF000000){ //Si es de 0 operandos
+        nroMnemonico = (inst>>20)&0x00F;
+        printf("%s\t\t",mnemonicos[nroMnemonico + 23].mnemonico); //Mnemónico
+    }
+    else if((inst & 0xF0000000) == 0xF0000000){ //Si es de un operando
+        nroMnemonico= ((inst&0x0F000000)>>24);
+        printf("%s\t\t",mnemonicos[nroMnemonico +12].mnemonico); //Mnemónico
+        if((inst & 0x00C00000)==0x00800000){ //Directo
+            printf("[%d]",inst&0x0000FFFF);
+        }
+        else if((inst & 0x00C00000)==0x00400000){ //De Registro
+            op = inst & 0XFFFF;
+            if((op & 0XF) < 10 ){
+                printf("%s", Registros[op & 0XF].nombre);
+            } else {
+                sectorReg = (op>>4) & 0X3;
+                switch(sectorReg){
+                    case 0:
+                        printf("%s",Registros[op & 0XF].nombre);
+                        break;
+                    case 1:
+                        printf("%XL",op & 0XF);
+                        break;
+                    case 2:
+                        printf("%XH",op & 0XF);
+                        break;
+                    case 3:
+                        printf("%XX",op & 0XF);
+                        break;
+                }
+            }
+        }
+        else { //Supongo inmediato
+            printf("%4d",inst&0x0000FFFF);
+        }
+    }
+    else{ //Si es de dos operandos
+        nroMnemonico= ((inst&0xF0000000)>>28) & 0x0000000F; //Mnemónico
+        printf("%s\t\t",mnemonicos[nroMnemonico].mnemonico);
+
+        if((inst & 0x0C000000)==0x08000000) //Si operando 1 es directo
+            printf("[%d], ",((inst&0x00FFF000)>>12));
+        else if((inst & 0x0C000000)==0x04000000){ //Si operando 1 es de registro
+            op = (inst>>12) & 0XFFF;
+            if((op & 0XF) < 10 ){
+                printf("%s", Registros[op & 0XF].nombre);
+            } else {
+                sectorReg = (op>>4) & 0X3;
+                switch(sectorReg){
+                    case 0:
+                        printf("%s, ",Registros[op & 0XF].nombre);
+                        break;
+                    case 1:
+                        printf("%XL, ",op & 0XF);
+                        break;
+                    case 2:
+                        printf("%XH, ",op & 0XF);
+                        break;
+                    case 3:
+                        printf("%XX, ",op & 0XF);
+                        break;
+                }
+            }
+        }
+        else { // Si operando 1 es inmediato
+            op=(inst&0x00FFF000)>>12;
+            op=op<<20;
+            op=op>>20;
+            printf("%4d, ",op);
+        }
+        if((inst & 0x03000000)==0x02000000) //Si operando 2 es directo
+            printf("[%d]",(inst&0x00000FFF));
+
+        else if((inst & 0x03000000)==0x01000000){ //Si operando 2 es de registro
+            op = inst & 0XFFF;
+            if((op & 0XF) < 10 ){
+                printf("%s", Registros[op & 0XF].nombre);
+            } else {
+                sectorReg = (op>>4) & 0X3;
+                switch(sectorReg){
+                    case 0:
+                        printf("%s",Registros[op & 0XF].nombre);
+                        break;
+                    case 1:
+                        printf("%XL",op & 0XF);
+                        break;
+                    case 2:
+                        printf("%XH",op & 0XF);
+                        break;
+                    case 3:
+                        printf("%XX",op & 0XF);
+                        break;
+                }
+            }
+        }
+        else { // Si operando 2 es inmediato
+            op=(inst&0x00000FFF);
+            op=op<<20;
+            op=op>>20;
+            printf("%d",op);
+        }
+    }
+}

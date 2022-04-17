@@ -293,7 +293,7 @@ void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemon
         }
   
     mnemonico=recorreMnemonicos(mnemonicos,parsed[1]);
-   // printf("Traduccion: %X\n",mnemonico);
+    //printf("Traduccion: %X\n",mnemonico);
     //printf("%s",parsed[2]);
     if(mnemonico!=0XFFFFFFFF && mnemonico!=0xFF1){ //si no hay error sigue con la ejecucion de la traduccion normal
         if(mnemonico<=0XB){
@@ -324,8 +324,13 @@ void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemon
             } 
          //   printf("%d %d\n",op1 ,op2);
             *instruccionBin = (mnemonico<<28) | ((tipoOpe1<<26) & 0x0C000000) | ((tipoOpe2<<24) & 0x03000000) | ((op1<<12)) | (op2);
-            if(strcmp(imprimir,"-o")==0) 
-                printf("[%04d]:\t%02X %02X %02X %02X\t\t%d: %s\t\t%s, %s\t\t%s\n",i,(*instruccionBin>>24) & 0XFF,(*instruccionBin>>16)&0XFF,(*instruccionBin>>8)&0XFF,*instruccionBin & 0XFF ,i+1,parsed[1],parsed[2],parsed[3],comentario);
+
+            if(strcmp(imprimir,"-o")==0)
+                if (parsed[0]!=NULL){
+                    printf("[%04d]:\t%02X %02X %02X %02X\t\t%s: %s\t\t%s, %s\t\t%s\n",i,(*instruccionBin>>24) & 0XFF,(*instruccionBin>>16)&0XFF,(*instruccionBin>>8)&0XFF,*instruccionBin & 0XFF ,parsed[0],parsed[1],parsed[2],parsed[3],comentario);
+                }else
+                    printf("[%04d]:\t%02X %02X %02X %02X\t\t%d: %s\t\t%s, %s\t\t%s\n",i,(*instruccionBin>>24) & 0XFF,(*instruccionBin>>16)&0XFF,(*instruccionBin>>8)&0XFF,*instruccionBin & 0XFF ,i+1,parsed[1],parsed[2],parsed[3],comentario);
+    
          //   printf("%08X  \n", *instruccionBin);
 
             //Bloque de dos operandos
@@ -349,6 +354,7 @@ void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemon
 
          //   printf("Operando= %d\n",op1);
             *instruccionBin = ((mnemonico << 24) & 0XFF000000) | ((tipoOpe1 << 22) & 0x00C00000) | (op1);
+
             char comentario[]=";";
             if(parsed[4]!=NULL){
                 strcat(comentario,parsed[4]); 
@@ -356,7 +362,10 @@ void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemon
                 comentario[0]=' ';
             }
             if(strcmp(imprimir,"-o")==0)
-                printf("[%04d]:\t%02X %02X %02X %02X\t\t%d: %s\t\t%s\t\t%s\n",i,(*instruccionBin>>24) & 0XFF,(*instruccionBin>>16)&0XFF,(*instruccionBin>>8)&0XFF,*instruccionBin & 0XFF ,i+1,parsed[1],parsed[2],comentario);
+                if (parsed[0]!=NULL){
+                    printf("[%04d]:\t%02X %02X %02X %02X\t\t%s: %s\t\t%s\t\t%s\n",i,(*instruccionBin>>24) & 0XFF,(*instruccionBin>>16)&0XFF,(*instruccionBin>>8)&0XFF,*instruccionBin & 0XFF ,parsed[0],parsed[1],parsed[2],comentario);
+                }else
+                    printf("[%04d]:\t%02X %02X %02X %02X\t\t%d: %s\t\t%s\t\t%s\n",i,(*instruccionBin>>24) & 0XFF,(*instruccionBin>>16)&0XFF,(*instruccionBin>>8)&0XFF,*instruccionBin & 0XFF ,i+1,parsed[1],parsed[2],comentario);
             //Bloque de 1 operando
         }
 
@@ -370,15 +379,17 @@ void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemon
             }
             else
                 *instruccionBin = (mnemonico<<20) & 0XFFF00000;
-        //printf("%X\n",*instruccionBin);
+        
         if(strcmp(imprimir,"-o")==0)
-            printf("[%04d]:\t%02X %02X %02X %02X\t\t%d: %s\t\t\t\t%s\n",i,(*instruccionBin>>24) & 0XFF,(*instruccionBin>>16)&0XFF,(*instruccionBin>>8)&0XFF,*instruccionBin & 0XFF, i+1,parsed[1],comentario);
+            if (parsed[0]!=NULL)
+                printf("[%04d]:\t%02X %02X %02X %02X\t\t%s: %s\t\t\t\t%s\n",i,(*instruccionBin>>24) & 0XFF,(*instruccionBin>>16)&0XFF,(*instruccionBin>>8)&0XFF,*instruccionBin & 0XFF, parsed[0],parsed[1],comentario);
+            else
+                printf("[%04d]:\t%02X %02X %02X %02X\t\t%d: %s\t\t\t\t%s\n",i,(*instruccionBin>>24) & 0XFF,(*instruccionBin>>16)&0XFF,(*instruccionBin>>8)&0XFF,*instruccionBin & 0XFF, i+1,parsed[1],comentario);
     }
      
     
 
 }
-
 __int32 DevuelveInmediato(char operando[], ListaRotulos LR){
         char *ope;
 
