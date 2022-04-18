@@ -442,23 +442,23 @@ __int32 DevuelveDirecto(char operando[], TRegistros Registros[]){
     ope[strlen(ope)-1]='\0';
    // printf("%s",ope);
     if(ope[0] >= '0' && ope[0] <= '9'){
-         return (atoi(ope) + Registros[0].ValorRegistro);
+         return (atoi(ope));
     }else{
         switch(ope[0]){ //Con esto vamos a devolver el valor en decimal.
             case '#':
                 ope = &ope[1];
-                return atoi(ope) + Registros[0].ValorRegistro;
+                return atoi(ope);
                 break;
             case 39: //Si es una letra.
-                return (int) ope[1] + Registros[0].ValorRegistro;
+                return (int) ope[1];
                 break;
             case '@':
                 ope = &ope[1];
-                return strtoul(ope, NULL, 8) + Registros[0].ValorRegistro;
+                return strtoul(ope, NULL, 8);
                 break;
             case '%':
                 ope = &ope[1];
-                return strtoul(ope, NULL, 16) + Registros[0].ValorRegistro;
+                return strtoul(ope, NULL, 16);
                 break;
             default:
                 return -1;

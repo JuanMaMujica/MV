@@ -427,8 +427,9 @@ void leeInstruccion(){
                // printf("%d %08X\n", Registros[5].ValorRegistro,op2);
                 alamacenaRM(valorOp1,tipoOp1,op1);
                 alamacenaRM(valorOp2,tipoOp2,op2);
-               // printf("%d %08X\n",Registros[5].ValorRegistro ,Memoria[op1+Registros[0].ValorRegistro]);
-            } 
+            //    printf("%d %08X %d\n",Registros[5].ValorRegistro ,Memoria[op1+Registros[0].ValorRegistro],op1);
+            }
+            //printf("%d %08X\n",Registros[5].ValorRegistro ,Memoria[op1+Registros[0].ValorRegistro]); 
             if(mnemonico != 0X0 && mnemonico != 0X3 && mnemonico !=0X6 ){ // cambia el valor de CC seguun el resultado que se calcule
                 cambiaCC(valorOp1);
             }
@@ -438,8 +439,9 @@ void leeInstruccion(){
             tipoOp1 = (instruccion>>22) & 0X3;
             op1 = instruccion & 0XFFFF; 
             valorOp1 = decodificaOperando(op1,tipoOp1);
+            //printf("%X: %08X  %08X\n",mnemonico,Memoria[op1+Registros[0].ValorRegistro],op1);
             (*fun2[((mnemonico>>24)&0XF)])(&valorOp1);
-            printf("Salida de funcion %08X",Memoria[op1+Registros[0].ValorRegistro]);
+           // printf("%X: %08X  %08X\n",mnemonico,Memoria[op1+Registros[0].ValorRegistro],op1);
             if (mnemonico==0XFA || mnemonico==0XFB){   // RND, NOT
                 alamacenaRM(valorOp1,tipoOp1,op1);
             }
