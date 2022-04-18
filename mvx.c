@@ -23,7 +23,7 @@ int banderas[5] = {0};
 int breakpoint = 0;
 
 //--------------------------------------Prototipos---------------------------------------------------
-void InicializaRegistros(TRegistros Registros[]);
+void InicializaRegistros();
 void cargaMnemonicos();
 void leeInstruccion();
 void cambiaCC(__int32 valorOp1);
@@ -197,7 +197,7 @@ void sys(__int32 *a){
             }
             if (ax & 0x010){ 
                 if (Memoria[edx+ds+i]<=0x7E && Memoria[edx+ds+i]>=0x20)  //si es imprimible printeo como char (creo que estos son los caracteres imprimibles, pero no se)
-                    printf("%c", Memoria[edx+ds+i] & 0xFF);
+                    printf("%c", Memoria[edx+ds+i] & 0XFF);
                 else
                     printf(".");  //si no es imprimible printeo un punto
             }
@@ -272,7 +272,7 @@ void main(int arg,char *args[]){
     FILE *archI;
     archI = fopen(args[1],"rb");
 
-    InicializaRegistros(Registros);
+    InicializaRegistros();
     cargaMnemonicos();
     fread(Header,sizeof(__int32),6,archI);
     fread(Memoria,sizeof(__int32),Header[1],archI);
@@ -307,7 +307,7 @@ void main(int arg,char *args[]){
 
 }
 
-void InicializaRegistros(TRegistros Registros[]){
+void InicializaRegistros(){
     strcpy(Registros[0].nombre,"DS "); Registros[0].ValorRegistro=0;
     strcpy(Registros[1].nombre,"   "); Registros[1].ValorRegistro=0;
     strcpy(Registros[2].nombre,"   "); Registros[2].ValorRegistro=0;
@@ -423,19 +423,23 @@ void leeInstruccion(){
             }
             (*fun[mnemonico])(&valorOp1,&valorOp2); //llama a la instruccion correspondiente dependiendo del mnemonico
             if(mnemonico!=0X6){ // alamcena los valores calculados anteriormente en los registros o memoria correspondiente menos en el cmp 
+               // printf("%d %08X\n", Registros[5].ValorRegistro,op1);
+               // printf("%d %08X\n", Registros[5].ValorRegistro,op2);
                 alamacenaRM(valorOp1,tipoOp1,op1);
                 alamacenaRM(valorOp2,tipoOp2,op2);
-            }
-
+               // printf("%d %08X\n",Registros[5].ValorRegistro ,Memoria[op1+Registros[0].ValorRegistro]);
+            } 
             if(mnemonico != 0X0 && mnemonico != 0X3 && mnemonico !=0X6 ){ // cambia el valor de CC seguun el resultado que se calcule
                 cambiaCC(valorOp1);
             }
+            
 
         } else if(cantidadOperandos == 1){
             tipoOp1 = (instruccion>>22) & 0X3;
             op1 = instruccion & 0XFFFF; 
             valorOp1 = decodificaOperando(op1,tipoOp1);
             (*fun2[((mnemonico>>24)&0XF)])(&valorOp1);
+            printf("Salida de funcion %08X",Memoria[op1+Registros[0].ValorRegistro]);
             if (mnemonico==0XFA || mnemonico==0XFB){   // RND, NOT
                 alamacenaRM(valorOp1,tipoOp1,op1);
             }
@@ -503,7 +507,7 @@ __int32 decodificaOperando(__int32 op, __int32 tipoOp){
 void alamacenaRM(__int32 valorOp, __int32 tipoOp, __int32 op){
     __int32 sectorRegistro;
     __int32 registro;
-    if(tipoOp == 1){
+    if(tipoOp == 1){        // de registro
         sectorRegistro = (op>>4)&0X3;
         registro = op & 0XF;
         if(sectorRegistro == 0){
@@ -516,7 +520,7 @@ void alamacenaRM(__int32 valorOp, __int32 tipoOp, __int32 op){
             Registros[registro].ValorRegistro = (Registros[registro].ValorRegistro & 0XFFFF0000) | (valorOp & 0XFFFF);
         }
       
-    } else if(tipoOp == 2){
+    } else if(tipoOp == 2){ //de directo
         Memoria[op+Registros[0].ValorRegistro] = valorOp;
     }
 }

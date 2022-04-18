@@ -70,7 +70,6 @@ int main(int arg, char *args[])
     InicializaRegistros(Registros);
 
     //-------------------------------------------------------
-    Registros[0].ValorRegistro=10;
     if(arg==4){
         strcpy(imprimir,args[3]);
     } else {
@@ -80,6 +79,7 @@ int main(int arg, char *args[])
     if(archI!=NULL)     //si el archivo de entrada no existe o se genera algun error no hace nada
     {
         buscaRotulo(&LR,archI,&contadorDS);
+        Registros[0].ValorRegistro=contadorDS;
         InicializaHeader(header,contadorDS);
         fseek(archI,0,SEEK_SET);
 
@@ -265,8 +265,9 @@ void buscaRotulo(ListaRotulos *LR, FILE *archA, int *contadorDS){
         }
         freeline(parsed);
         i++;
-        *contadorDS = i;
     }
+    *contadorDS = i;
+    
 }
 
 __int32 esRotulo(char ope[],ListaRotulos LR){
