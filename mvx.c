@@ -217,13 +217,16 @@ void sys(__int32 *a){
     } else{         //sys f
         if (banderas[0]) {   //si está -b
             
-            printf("[%d] cmd: ",Registros[5].ValorRegistro);
-            fflush(stdin);    //muestro el ip en el prompt
-            gets(car);
             if (banderas[1])
                 system("cls");    //me copié de su mv vieja 
             if (banderas[2])    //disassembler, nazi  //trabajare como string a lo que entre por comodidad
                 MuestraCodigo();
+            printf("[%d] cmd: ",Registros[5].ValorRegistro);
+            fflush(stdin);    //muestro el ip en el prompt
+            gets(car);
+
+            
+            
             
             if (car[0]=='p'){
                 breakpoint = 1;
