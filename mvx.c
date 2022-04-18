@@ -426,7 +426,8 @@ void leeInstruccion(){
             (*fun[mnemonico])(&valorOp1,&valorOp2); //llama a la instruccion correspondiente dependiendo del mnemonico
             if(mnemonico!=0X6){ // alamcena los valores calculados anteriormente en los registros o memoria correspondiente menos en el cmp 
                 alamacenaRM(valorOp1,tipoOp1,op1);
-                alamacenaRM(valorOp2,tipoOp2,op2);
+                if(op1 != op2)
+                    alamacenaRM(valorOp2,tipoOp2,op2);
             }
             if(mnemonico != 0X0 && mnemonico != 0X3 && mnemonico !=0X6 ){ // cambia el valor de CC seguun el resultado que se calcule
                 cambiaCC(valorOp1);
