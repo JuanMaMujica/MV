@@ -332,6 +332,12 @@ void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemon
          //   printf("%d %d\n",op1 ,op2);
             *instruccionBin = (mnemonico<<28) | ((tipoOpe1<<26) & 0x0C000000) | ((tipoOpe2<<24) & 0x03000000) | ((op1<<12)) | (op2);
 
+            char comentario[]=";";
+            if(parsed[4]!=NULL){
+                strcat(comentario,parsed[4]); 
+            } else {
+                comentario[0]=' ';
+            }
             if(strcmp(imprimir,"-o")==0)
                 if (parsed[0]!=NULL){
                     printf("[%04d]:\t%02X %02X %02X %02X\t\t%s: %s\t\t%s, %s\t\t%s\n",i,(*instruccionBin>>24) & 0XFF,(*instruccionBin>>16)&0XFF,(*instruccionBin>>8)&0XFF,*instruccionBin & 0XFF ,parsed[0],parsed[1],parsed[2],parsed[3],comentario);
