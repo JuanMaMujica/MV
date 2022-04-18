@@ -122,6 +122,7 @@ void jnz(__int32 *a){
 void jnp(__int32 *a){
     if(((Registros[8].ValorRegistro & 0x80000000) == 0x80000000) || (Registros[8].ValorRegistro == 1)){ //Si es negativo Ó 0.
         Registros[5].ValorRegistro = *a;
+    
     }
 }
 
@@ -160,8 +161,7 @@ void sys(__int32 *a){
     __int32 ax=(Registros[10].ValorRegistro & 0XFFFF);
     char straux[30],car[4],num1[4],num2[4];
 
-    printf("%d", *a);
-
+    //printf("%d", *a);
     if (*a == 0X1){
         if (ax & 0x100){     //bit vale 1
             if (!(ax & 0x800)){                             // muestra prompt. si vale 1, no entra.
@@ -216,14 +216,15 @@ void sys(__int32 *a){
         }
     } else{         //sys f
         if (banderas[0]) {   //si está -b
-            printf("[%d] cmd: ",Registros[5].ValorRegistro-1);
+            
+            printf("[%d] cmd: ",Registros[5].ValorRegistro);
             fflush(stdin);    //muestro el ip en el prompt
             gets(car);
             if (banderas[1])
-                system("cls");    //me copié de su mv vieja
-            if (banderas[2])
+                system("cls");    //me copié de su mv vieja 
+            if (banderas[2])    //disassembler, nazi  //trabajare como string a lo que entre por comodidad
                 MuestraCodigo();
-            //disassembler, nazi  //trabajare como string a lo que entre por comodidad
+            
             if (car[0]=='p'){
                 breakpoint = 1;
                     //se me ocurre una variable global que entre a sys f desde ejecucion
@@ -237,17 +238,19 @@ void sys(__int32 *a){
                 }
                 x=atoi(num1);         //convierto num1 a integer
                 if (car[i]=='\0')    //si no hay nada, entonces no hay segundo numero
-                    printf("[%d]: Hexa: %x Decimal: %d \n", x, Memoria[x], Memoria[x]);
-                 else if (car[i]==' '){    //si hay espacio, hay segundo numero. no validé que entre otra cosa
+                    printf("[%d]: Hexa: %X Decimal: %d \n", x, Memoria[x], Memoria[x]);
+                else if (car[i]==' '){    //si hay espacio, hay segundo numero. no validé que entre otra cosa
                     j=0;
                     while(car[i]!='\0'){      //mientras no sea nulo, concateno en num2
                         num2[j]=car[i];
                         i++;
+                        j++;
                     }
-                    y=atoi(num2);       //convierto num2 a int
+                    y=atoi(num2);
+                    printf("%d",y);       //convierto num2 a int
                     if (y>0 && x<y){      //si y es un entero positivo printeo entre x e y.
                         for (i=x;i<=y;i++){
-                            printf("[%d]: Hexa; %x  Decimal: %d", i, Memoria[i], Memoria[i]);
+                            printf("[%d]: Hexa: %X  Decimal: %d\n", i, Memoria[i], Memoria[i]);
                         }
                     }
                 }
@@ -389,7 +392,9 @@ void leeInstruccion(){
 
     while (Registros[5].ValorRegistro>=0 && Registros[5].ValorRegistro<Registros[0].ValorRegistro){
        // printf("%d\n",Registros[0].ValorRegistro);
+       // printf("%d: ",Registros[5].ValorRegistro);
         instruccion = Memoria[Registros[5].ValorRegistro];
+      //  printf("%08X\n",instruccion);
         Registros[5].ValorRegistro++;
         
         mnemonico = leeMnemonico(instruccion,&cantidadOperandos);
@@ -437,11 +442,14 @@ void leeInstruccion(){
 
         } else if(cantidadOperandos == 1){
             tipoOp1 = (instruccion>>22) & 0X3;
+           // printf("%08X\n",instruccion);
             op1 = instruccion & 0XFFFF; 
             valorOp1 = decodificaOperando(op1,tipoOp1);
             //printf("%X: %08X  %08X\n",mnemonico,Memoria[op1+Registros[0].ValorRegistro],op1);
-            (*fun2[((mnemonico>>24)&0XF)])(&valorOp1);
+           // printf("%d", op1);
+            (*fun2[instruccion>>24 & 0XF])(&valorOp1);
            // printf("%X: %08X  %08X\n",mnemonico,Memoria[op1+Registros[0].ValorRegistro],op1);
+           // printf("%d-IP\n",Registros[5].ValorRegistro);
             if (mnemonico==0XFA || mnemonico==0XFB){   // RND, NOT
                 alamacenaRM(valorOp1,tipoOp1,op1);
             }

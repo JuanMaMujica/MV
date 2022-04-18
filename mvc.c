@@ -25,6 +25,7 @@ typedef struct nodo {
 }   nodo;
 
 typedef struct nodo* ListaRotulos;
+int hexa_u_octal;
 
 //------------------------------------------TRADUCTOR MV----------------------------------------------------------
 int rotuloInmediato(ListaRotulos LR, char operando[]);
@@ -99,11 +100,11 @@ int main(int arg, char *args[])
             if((!lineaVacia)){
                 Traduccion(parsed,&instruccionBin,mnemonicos,LR,Registros,&error,i,imprimir);
                 Memoria[j++]=instruccionBin;
+                i++;
             } else {
                 if(parsed[4]!=NULL && strcmp(imprimir,"-o")==0)
                     printf("%s\n",parsed[4]);
-                }
-                i++;
+                }      
         }
 
         freeline(parsed);
@@ -263,8 +264,9 @@ void buscaRotulo(ListaRotulos *LR, FILE *archA, int *contadorDS){
         if(parsed[0]!=NULL){
             ingresarRotulo(LR,parsed[0],i);
         }
-        freeline(parsed);
-        i++;
+        if(!(parsed[0]==NULL && parsed[1]==NULL && parsed[2]==NULL && parsed[3]==NULL))
+            i++;
+        freeline(parsed);     
     }
     *contadorDS = i;
     
@@ -316,7 +318,11 @@ void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemon
             op2 =transformaOperando(op2String,tipoOpe2,Registros,LR);
 
             if (tipoOpe2==0){
-                if(op2>2047 || op2<-2048){
+                if(op2>4095 && hexa_u_octal){
+                    op2 = op2 & 0XFFF;
+                    printf("WARNING: operando truncado \n");
+                }
+                if((op2>2047 || op2<-2048) && !hexa_u_octal){
                     op2 = op2 & 0XFFF;
                     printf("WARNING: operando truncado \n");
                 } else if(op2 < 0 && op2>-2048){
@@ -393,7 +399,7 @@ void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemon
 }
 __int32 DevuelveInmediato(char operando[], ListaRotulos LR){
         char *ope;
-
+        hexa_u_octal=0;
         if(operando[0]== '-' || (operando[0] >= '0' && operando[0] <= '9'))
             return atoi(operando);
         else{
@@ -411,10 +417,12 @@ __int32 DevuelveInmediato(char operando[], ListaRotulos LR){
                         return (int) operando[1];
                         break;
                     case '@':
+                    hexa_u_octal=1;
                         ope = &operando[1];
                         return strtoul(ope, NULL, 8);
                         break;
                     case '%':
+                        hexa_u_octal=1;
                         ope = &operando[1];
                         return strtoul(ope, NULL, 16);
                         break;

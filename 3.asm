@@ -3,7 +3,7 @@
         mov     ax  ,   %008
 ;       mov     ax  ,   %001
         mov     cx  ,   1
-        mov     dx  ,   0
+        mov     edx  ,   0
         sys     1 
 
 ; Inicializo         
@@ -25,7 +25,7 @@ sigue:  mov     ex  ,   [0]
 
         mov     ax  ,   %001
         mov     cx  ,   1
-        mov     dx  ,   1
+        mov     edx  ,   1
         sys     2
         stop
         mov     [1] ,   1 ; ojo esto no. 

@@ -14,9 +14,9 @@
     ldl 65535
     mov [4],ac
     shr ac,32
-    mov cx, 1
-    shl cx, 31
-    shr cx, 31    
-    mov [5], cx
+    mov ecx, 1
+    shl ecx, 31
+    shr ecx, 31    
+    mov [5], ecx
     sys %F 
     stop
