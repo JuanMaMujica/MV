@@ -153,11 +153,13 @@ void not(__int32 *a){
 
 void sys(__int32 *a){
 
-    int i,j=0,x,y,ax=Registros[0xA].ValorRegistro & 0XFFFF;
-    int cx=Registros[0xC].ValorRegistro & 0XFFFF;
-    int ds=Registros[0].ValorRegistro;
-    int edx=Registros[0xD].ValorRegistro;
+    int i,j=0,x,y;
+    __int32 cx=(Registros[12].ValorRegistro & 0XFFFF);
+    __int32 ds=Registros[0].ValorRegistro;
+    __int32 edx=Registros[13].ValorRegistro;
+    __int32 ax=(Registros[10].ValorRegistro & 0XFFFF);
     char straux[30],car[4],num1[4],num2[4];
+
 
     if (*a == 0X1){
         if (ax & 0x100){     //bit vale 1
@@ -197,11 +199,14 @@ void sys(__int32 *a){
                     printf("%c", Memoria[edx+ds+i] & 0xFF);
                 else
                     printf(".");  //si no es imprimible printeo un punto
-            } else if (ax & 0x008){
+            }
+            if (ax & 0x008){
                 printf("%x", Memoria[edx+ds+i]);
-            } else if (ax & 0x004){
+            }
+            if (ax & 0x004){
                 printf("%o", Memoria[edx+ds+i]);
-            } else if (ax & 0x001){
+            }
+            if (ax & 0x001){
                 printf("%d", Memoria[edx+ds+i]);
             }
             if (!(ax & 0x100)){     //si el bit 8 vale 0, agrego salto de línea despues de imprimir
@@ -210,9 +215,14 @@ void sys(__int32 *a){
         }
     } else{         //sys f
         if (banderas[0]) {   //si está -b
-            printf("[%d] cmd: ",Registros[5].ValorRegistro);
+            printf("[%d] cmd: ",Registros[5].ValorRegistro-1);
             fflush(stdin);    //muestro el ip en el prompt
-            gets(car);      //trabajare como string a lo que entre por comodidad
+            gets(car);
+            if (banderas[1])
+                system("cls");    //me copié de su mv vieja
+            if (banderas[2])
+                MuestraCodigo();
+            //disassembler, nazi  //trabajare como string a lo que entre por comodidad
             if (car[0]=='p'){
                 breakpoint = 1;
                     //se me ocurre una variable global que entre a sys f desde ejecucion
@@ -244,13 +254,6 @@ void sys(__int32 *a){
                 breakpoint = 0;
                 //printf("Continuando ejecucion...");
             }
-        }
-        if (banderas[1]){
-            system("cls");    //me copié de su mv vieja
-        }
-        if (banderas[2]){
-            MuestraCodigo();
-            //disassembler, nazi
         }
     }
 }
@@ -389,6 +392,7 @@ void leeInstruccion(){
        // printf("%d\n",Registros[0].ValorRegistro);
         instruccion = Memoria[Registros[5].ValorRegistro];
         Registros[5].ValorRegistro++;
+        
         mnemonico = leeMnemonico(instruccion,&cantidadOperandos);
         if(cantidadOperandos == 2){
             tipoOp1 = (instruccion >> 26) & 0X3;
@@ -442,12 +446,10 @@ void leeInstruccion(){
         } else {
             stop();
         }
-        if(breakpoint == 1){
+        if(breakpoint == 1 && mnemonico != mnemonicos[12].cod){
             sys(&sysB);
         }
-
-    }
-    
+    }  
 
 }
 
@@ -527,7 +529,7 @@ void MuestraCodigo(){
     //MUESTRA DE REGISTROS
     printf("\nRegistros:\n");
     for(int j = 0; j < 16; j++){
-        printf("%2s = %12d |", Registros[j].nombre, Registros[j].ValorRegistro);
+        printf("%3s = %12d |", Registros[j].nombre, Registros[j].ValorRegistro);
         if (j % 4 == 3)
             printf("\n");
     }

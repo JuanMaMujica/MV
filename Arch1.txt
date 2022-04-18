@@ -3,3 +3,4 @@ sys %f
 mov CX, 5
 mov AX,%001
 sys %1
+stop
