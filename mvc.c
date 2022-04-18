@@ -95,7 +95,6 @@ int main(int arg, char *args[])
             fgets(instruccionAss,256,archI);
               //lee la linea correspondiente del archivo asm
             parsed = parseline(instruccionAss);
-          // parseo(archI,parsed);
             int lineaVacia = parsed[0]==NULL && parsed[1]==NULL && parsed[2]==NULL && parsed[3]==NULL;
             if((!lineaVacia)){
                 Traduccion(parsed,&instruccionBin,mnemonicos,LR,Registros,&error,i,imprimir);
@@ -490,7 +489,6 @@ __int32 DevuelveRegistro(char operando[],TRegistros Registros[]){
 
     strToUpper(operando);
     //printf("%s\n",operando);
-    //buscaRegistro 
     res = buscaRegistro(operando,Registros);
     if (res!=-1){ //registros de la primer columna (32 bits)
         return res;
@@ -561,8 +559,4 @@ int rotuloInmediato(ListaRotulos LR, char operando[]){
         return 0;
 }
 
-    //  Verificamos parsed[1] mnemonico
-    // Tenemos que ver si es de 1/2 o ningun operador
-    // Verificamos Operador1 Operador 2 o lo que tenga
-    //zayrux
-
+  

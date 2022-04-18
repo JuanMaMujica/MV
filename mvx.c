@@ -218,11 +218,11 @@ void sys(__int32 *a){
         if (banderas[0]) {   //si está -b
             
             if (banderas[1])
-                system("cls");    //me copié de su mv vieja 
-            if (banderas[2])    //disassembler, nazi  //trabajare como string a lo que entre por comodidad
+                system("cls");     
+            if (banderas[2])    //disassembler 
                 MuestraCodigo();
-            printf("[%d] cmd: ",Registros[5].ValorRegistro);
-            fflush(stdin);    //muestro el ip en el prompt
+            printf("[%d] cmd: ",Registros[5].ValorRegistro);//muestro el ip en el prompt
+            fflush(stdin);    
             gets(car);
 
             
@@ -230,9 +230,7 @@ void sys(__int32 *a){
             
             if (car[0]=='p'){
                 breakpoint = 1;
-                    //se me ocurre una variable global que entre a sys f desde ejecucion
-                    //y se setee en 1 cada vez que ponemos 'p'?
-            } else if (car[0]>='0' && car[0]<='9'){          //si el primer caracter es un numero // quizá haya alguna funcion para hacer esto menos peruano xD
+            } else if (car[0]>='0' && car[0]<='9'){          //si el primer caracter es un numero 
                 breakpoint = 0;
                 i=0;
                 while (car[i]!='\0' && car[i]!=' '){    //concateno el numero en el array num1 hasta que haya espacio o no haya nada (ya se que no sera negativo)
@@ -306,8 +304,6 @@ void main(int arg,char *args[]){
             MuestraCodigo();
         }
         leeInstruccion();
-  
-
     }
 
 
@@ -394,10 +390,8 @@ void leeInstruccion(){
     void (*fun2[])(__int32 *) = {sys,jmp, jz,jp,JN,jnz,jnp,jnn,ldl,ldh,rnd,not};
 
     while (Registros[5].ValorRegistro>=0 && Registros[5].ValorRegistro<Registros[0].ValorRegistro){
-       // printf("%d\n",Registros[0].ValorRegistro);
-       // printf("%d: ",Registros[5].ValorRegistro);
+
         instruccion = Memoria[Registros[5].ValorRegistro];
-      //  printf("%08X\n",instruccion);
         Registros[5].ValorRegistro++;
         
         mnemonico = leeMnemonico(instruccion,&cantidadOperandos);
@@ -431,13 +425,9 @@ void leeInstruccion(){
             }
             (*fun[mnemonico])(&valorOp1,&valorOp2); //llama a la instruccion correspondiente dependiendo del mnemonico
             if(mnemonico!=0X6){ // alamcena los valores calculados anteriormente en los registros o memoria correspondiente menos en el cmp 
-               // printf("%d %08X\n", Registros[5].ValorRegistro,op1);
-               // printf("%d %08X\n", Registros[5].ValorRegistro,op2);
                 alamacenaRM(valorOp1,tipoOp1,op1);
                 alamacenaRM(valorOp2,tipoOp2,op2);
-            //    printf("%d %08X %d\n",Registros[5].ValorRegistro ,Memoria[op1+Registros[0].ValorRegistro],op1);
             }
-            //printf("%d %08X\n",Registros[5].ValorRegistro ,Memoria[op1+Registros[0].ValorRegistro]); 
             if(mnemonico != 0X0 && mnemonico != 0X3 && mnemonico !=0X6 ){ // cambia el valor de CC seguun el resultado que se calcule
                 cambiaCC(valorOp1);
             }
@@ -445,14 +435,9 @@ void leeInstruccion(){
 
         } else if(cantidadOperandos == 1){
             tipoOp1 = (instruccion>>22) & 0X3;
-           // printf("%08X\n",instruccion);
             op1 = instruccion & 0XFFFF; 
             valorOp1 = decodificaOperando(op1,tipoOp1);
-            //printf("%X: %08X  %08X\n",mnemonico,Memoria[op1+Registros[0].ValorRegistro],op1);
-           // printf("%d", op1);
             (*fun2[instruccion>>24 & 0XF])(&valorOp1);
-           // printf("%X: %08X  %08X\n",mnemonico,Memoria[op1+Registros[0].ValorRegistro],op1);
-           // printf("%d-IP\n",Registros[5].ValorRegistro);
             if (mnemonico==0XFA || mnemonico==0XFB){   // RND, NOT
                 alamacenaRM(valorOp1,tipoOp1,op1);
             }
