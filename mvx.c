@@ -160,6 +160,7 @@ void sys(__int32 *a){
     __int32 ax=(Registros[10].ValorRegistro & 0XFFFF);
     char straux[30],car[4],num1[4],num2[4];
 
+    printf("%d", *a);
 
     if (*a == 0X1){
         if (ax & 0x100){     //bit vale 1
@@ -189,7 +190,7 @@ void sys(__int32 *a){
                 }
             }
         }
-    } else if (*a==2){           //sys 2
+    } else if (*a==0X2){           //sys 2
         for (i=0;i<cx;i++){
             if (!(ax & 0x800)){
                 printf("[%d]:\t", edx+ds+i);     
@@ -382,8 +383,6 @@ void cargaMnemonicos()  //funcion que carga los mnemonicos con sus respectivos c
 void leeInstruccion(){
     __int32 sysB=0XF;
     int cantidadOperandos=0;
-    int ip=Registros[5].ValorRegistro;
-    int ds=Registros[0].ValorRegistro;
     __int32 instruccion,mnemonico,tipoOp1,tipoOp2,op1,op2,valorOp1,valorOp2,sectorOp2;
     void (*fun[])(__int32 *, __int32 *) = {mov, add, sub,swap,mul,DIV,cmp,shl,shr,and,or,xor};
     void (*fun2[])(__int32 *) = {sys,jmp, jz,jp,JN,jnz,jnp,jnn,ldl,ldh,rnd,not};
