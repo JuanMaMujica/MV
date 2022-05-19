@@ -29,15 +29,15 @@ int rotuloInmediato(ListaRotulos LR, char operando[]);
 __int32 tipoOperando(char op[],ListaRotulos LR);
 __int32 transformaOperando(char operando[],int tipoOperando,TRegistros Registros[],ListaRotulos LR);
 __int32 DevuelveInmediato(char operando[],ListaRotulos LR);
-__int32 DevuelveDirecto(char operando[], TRegistros Registros[]);
+__int32 DevuelveDirecto(char operando[]);
 __int32 DevuelveRegistro(char operando[],TRegistros Registros[]);
 __int32 esRotulo(char ope[],ListaRotulos LR);
 __int32 buscaRegistro(char operando[],TRegistros Registros[]);
 void InicializaRegistros(TRegistros Registros[]);
-void buscaRotulo(ListaRotulos *LR, FILE *archA,int *contadorDS);
+void buscaRotulo(ListaRotulos *LR, FILE *archA, int *tamanoCS, int *tamanoDS, int *tamanoES, int *tamanoSS);
 void parseo(FILE *archA,char **parsed);
 void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemonicos[],ListaRotulos LR,TRegistros Registros[],int *error,int i,char *imprimir);
-void InicializaHeader(__int32 Header[],int contadorDS);
+void InicializaHeader(__int32 Header[],int tamanoCS ,int tamanoDS, int tamanoES, int tamanoSS);
 void cargaMnemonicos(elementosMnemonicos mnemonicos[]);
 void ingresarRotulo(ListaRotulos *LR, char* rotulo, int lineaRotulo);
 __int32 recorreMnemonicos(elementosMnemonicos mnemonicos[],char* mnemonico);
@@ -45,9 +45,9 @@ void strToUpper(char palabra[]);
 
 int main(int arg, char *args[])
 {   
-    __int32 Memoria[4096]={0};
+    __int32 Memoria[8192]={0};
     int error=0; //equivale a 0 cuando no hay error, pasa a 1 cuando se encuentra un error
-    int i=0,j=6,contadorDS=0;    //checkear cuando hay que sumar el numero de linea y cuando no
+    int i=0,j=6,tamanoCS=0 ,tamanoDS=1024, tamanoES=1024, tamanoSS=1024;    //checkear cuando hay que sumar el numero de linea y cuando no
     __int32 header[6];
     elementosMnemonicos mnemonicos[25];
     ListaRotulos LR = NULL;
@@ -76,9 +76,9 @@ int main(int arg, char *args[])
 
     if(archI!=NULL)     //si el archivo de entrada no existe o se genera algun error no hace nada
     {
-        buscaRotulo(&LR,archI,&contadorDS);
-        Registros[0].ValorRegistro=contadorDS;
-        InicializaHeader(header,contadorDS);
+        buscaRotulo(&LR,archI,&tamanoCS,&tamanoDS,&tamanoES,&tamanoSS);
+       // Registros[0].ValorRegistro=contadorDS;
+        InicializaHeader(header,tamanoCS,tamanoDS,tamanoES,tamanoSS);
         fseek(archI,0,SEEK_SET);
 
             for (int i=0; i < 6; i++){
@@ -115,12 +115,12 @@ int main(int arg, char *args[])
 
 }
 
-void InicializaHeader(__int32 Header[],int contadorDS){
+void InicializaHeader(__int32 Header[],int tamanoCS ,int tamanoDS, int tamanoES, int tamanoSS){
     Header[0] = 0x4D562D31;
-    Header[1] = contadorDS; //Corresponde al DS
-    Header[2] = 0; 
-    Header[3] = 0; 
-    Header[4] = 0;
+    Header[1] = tamanoDS; //Corresponde al DS
+    Header[2] = tamanoSS; 
+    Header[3] = tamanoES; 
+    Header[4] = tamanoCS;
     Header[5] = 0x562E3232;
 }
 
@@ -236,9 +236,10 @@ void strToUpper(char palabra[]){      //Pasa a mayusculas el string que le manda
 
 }
 
-void buscaRotulo(ListaRotulos *LR, FILE *archA, int *contadorDS){
+void buscaRotulo(ListaRotulos *LR, FILE *archA, int *tamanoCS, int *tamanoDS, int *tamanoES, int *tamanoSS){
     char instruccionAss[256];
     char **parsed;
+    int valueConst;
     int i=0;
 
     while(!feof(archA)){
@@ -249,9 +250,23 @@ void buscaRotulo(ListaRotulos *LR, FILE *archA, int *contadorDS){
         }
         if(!(parsed[0]==NULL && parsed[1]==NULL && parsed[2]==NULL && parsed[3]==NULL))
             i++;
+        
+        strToUpper(parsed[5]);
+        if(strcmp(parsed[5],"DATA")==0)
+            *tamanoDS = parsed[6];
+        if(strcmp(parsed[5],"EXTRA")==0)
+            *tamanoES = parsed[6];
+        if(strcmp(parsed[5],"STACK")==0)
+            *tamanoSS = parsed[6];
+
+        if(parsed[7]!=NULL && parsed[8]!=NULL){
+            strToUpper(parsed[7]);
+            ingresarRotulo(LR,parsed[7],DevuelveConstantValue(parsed[8],LR));   //AGRAGAR LAS CONSTANTES STRING A UNA LISTA Y HACER TODA LA GILADA
+        } else 
+            //error de una constante no definida
         freeline(parsed);     
     }
-    *contadorDS = i;
+    *tamanoCS = i;
     
 }
 
@@ -421,7 +436,7 @@ __int32 buscaRegistro(char operando[],TRegistros Registros[]){
         return -1;
 }
 
-__int32 DevuelveDirecto(char operando[], TRegistros Registros[]){
+__int32 DevuelveDirecto(char operando[]){
     char *ope;
     ope = &operando[1];
     ope[strlen(ope)-1]='\0';
@@ -503,7 +518,7 @@ __int32 transformaOperando(char operando[],int tipoOperando,TRegistros Registros
     if(tipoOperando==0){
         return DevuelveInmediato(operando,LR);
     } else if(tipoOperando==2){
-        return DevuelveDirecto(operando,Registros); // Aca iria devuelveDriecto
+        return DevuelveDirecto(operando); // Aca iria devuelveDriecto
     } else 
         if (tipoOperando==1){
             return DevuelveRegistro(operando,Registros); 
@@ -522,3 +537,39 @@ int rotuloInmediato(ListaRotulos LR, char operando[]){
 }
 
   
+
+__int32 DevuelveConstantValue(char operando[], ListaStrings ){  //HAY QUE TERMINAR PASAR LAS CONSTANTES STRINGS A UNA LISTA
+        char *ope;
+        hexa_u_octal=0;
+        if(operando[0]== '-' || (operando[0] >= '0' && operando[0] <= '9'))
+            return atoi(operando);
+        else{
+            //if(operando[1]>=65 && operando[1]<=90 || (operando[1]>=97 && operando[1]<=122){
+            //    return operando[]
+            /*} else {*/
+                switch(operando[0]){ //Con esto vamos a devolver el valor en decimal.
+                    case '#':
+                        ope = &operando[1];
+
+                        return atoi(ope);
+                        break;
+                    case 39: //Si es una letra.
+                        return (int) operando[1];
+                        break;
+                    case '@':
+                    hexa_u_octal=1;
+                        ope = &operando[1];
+                        return strtoul(ope, NULL, 8);
+                        break;
+                    case '%':
+                        hexa_u_octal=1;
+                        ope = &operando[1];
+                        return strtoul(ope, NULL, 16);
+                        break;
+                    case 34:
+                    default:
+                        return -1;  // Utilizamos -1 para decir que es un error de sintaxis 
+                }
+            //}
+        }
+    }

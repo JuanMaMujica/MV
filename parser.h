@@ -1,4 +1,2 @@
-
-char **parseline(char *line);
+char **parseline(const char *line);
 void freeline(char **parsed);
-void saveline(char *line, char *filename);
