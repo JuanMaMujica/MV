@@ -350,7 +350,7 @@ void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemon
     mnemonico=recorreMnemonicos(mnemonicos,parsed[1]);
     if(mnemonico!=0XFFFFFFFF && mnemonico!=0xFF1){ //si no hay error sigue con la ejecucion de la traduccion normal
         if(mnemonico<=0XB){
-            char op1String[8], op2String[8];
+            char op1String[15], op2String[15];
             strcpy(op1String,parsed[2]);
             strcpy(op2String,parsed[3]);
 
@@ -562,7 +562,7 @@ __int32 tipoOperando(char op[],ListaRotulos LR){
     int Inmediato= (opPC=='#' || opPC=='@' || opPC=='%' || (opPC >= 48 && opPC <= 57) || opPC==39 ||opPC=='-' || rotuloInmediato(LR,op) ) ;
     int Directo= (opPC == '[');
     int Indirecto=0;
-    if (opPC=='[' && (opUno=='E'))
+    if (opPC=='[' && ((opUno=='E') || (opUno=='A' && op[2]=='C')))
         Indirecto++;
     
     
@@ -606,36 +606,27 @@ else{
             while (ope[k]!='\0'){
                 simbol[j++]=ope[k++];
             }
+            simbol[j]='\0';
             aux=atoi(simbol);
-      } else{                       //offset simbolo
-         /*   printf("Offset simbolo \n");
-            ListaRotulos auxlista = LR;
-            while (auxlista!=NULL){
-                printf("Rotulo %s, valor: %d \n", auxlista->rotulo, auxlista->linea);
-                auxlista=auxlista->sig;
-            } */
+      } else{                 
             k=4;
             j=0;
             while(ope[k]!='\0')               
                 simbol[j++]=ope[k++];      
             simbol[j]='\0';
-            while (LR!=NULL && strcmp(simbol,LR->rotulo)!=0)
-                LR=LR->sig;
 
-            printf("Valor Simbolo %s = %d \n", simbol, LR->linea);
+            ListaRotulos auxRotulos = LR;
+            while (auxRotulos!=NULL && strcmp(simbol,auxRotulos->rotulo)!=0)
+                auxRotulos=auxRotulos->sig;
 
-            if (LR!=NULL)
-                aux = LR->linea;
-
-            printf("Valor simbolo ya procesado: %d", aux);
-            
+            if (auxRotulos!=NULL)
+                aux = auxRotulos->linea;            
             
       }
       res = aux << 4 | (i & 0xF);
     } else     //no hay offset
         res = i & 0xF;      
 }
-printf("Valor de devolucion: %#010x\n", res&0xFFF);
 return (res & 0xFFF);
 }
 
