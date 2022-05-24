@@ -1,9 +1,7 @@
-        mov     AX      ,   %FF
-        mov     CX      ,   1
-        mov     EDX      ,   1
-        mov     [%1]    ,   'a' 
-unomas: sys     %2
-        add     [1]     ,   1
-        cmp     [1]     ,   'e'
-        jnp     unomas
-        stop
+CONST EQU 3
+
+mov [3],5
+MOV EAX,[3]
+MOV [2],15
+MOV [10],[EAX+CONST]
+STOP

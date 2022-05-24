@@ -10,6 +10,13 @@ typedef struct TRegistros{
 } TRegistros;
 
 
+typedef struct nodoS{
+    char nombre[20],valor[20];
+    struct nodoS *sig;
+} nodoS;
+
+typedef struct nodoS *ListaString;
+
 typedef struct {
     char mnemonico[5];
     __int32 cod;
@@ -23,6 +30,7 @@ typedef struct nodo {
 
 typedef struct nodo* ListaRotulos;
 int hexa_u_octal;
+ __int32 Memoria[8192]={0};
 
 //------------------------------------------TRADUCTOR MV----------------------------------------------------------
 int rotuloInmediato(ListaRotulos LR, char operando[]);
@@ -34,7 +42,7 @@ __int32 DevuelveRegistro(char operando[],TRegistros Registros[]);
 __int32 esRotulo(char ope[],ListaRotulos LR);
 __int32 buscaRegistro(char operando[],TRegistros Registros[]);
 void InicializaRegistros(TRegistros Registros[]);
-void buscaRotulo(ListaRotulos *LR, FILE *archA, int *tamanoCS, int *tamanoDS, int *tamanoES, int *tamanoSS);
+void buscaRotulo(ListaRotulos *LR, FILE *archA, int *tamanoCS, int *tamanoDS, int *tamanoES, int *tamanoSS, ListaString *LS);
 void parseo(FILE *archA,char **parsed);
 void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemonicos[],ListaRotulos LR,TRegistros Registros[],int *error,int i,char *imprimir);
 void InicializaHeader(__int32 Header[],int tamanoCS ,int tamanoDS, int tamanoES, int tamanoSS);
@@ -42,15 +50,18 @@ void cargaMnemonicos(elementosMnemonicos mnemonicos[]);
 void ingresarRotulo(ListaRotulos *LR, char* rotulo, int lineaRotulo);
 __int32 recorreMnemonicos(elementosMnemonicos mnemonicos[],char* mnemonico);
 void strToUpper(char palabra[]);
+__int32 DevuelveConstantValue(char operando[]);
+__int32 DevuelveIndirecto(char operando[],TRegistros Registros[], ListaRotulos LR);
 
 int main(int arg, char *args[])
 {   
-    __int32 Memoria[8192]={0};
+   
     int error=0; //equivale a 0 cuando no hay error, pasa a 1 cuando se encuentra un error
     int i=0,j=6,tamanoCS=0 ,tamanoDS=1024, tamanoES=1024, tamanoSS=1024;    //checkear cuando hay que sumar el numero de linea y cuando no
     __int32 header[6];
     elementosMnemonicos mnemonicos[25];
     ListaRotulos LR = NULL;
+    ListaString LS=NULL;
     __int32 instruccionBin=0X0;
     char imprimir[3];
     FILE *archI;
@@ -76,7 +87,7 @@ int main(int arg, char *args[])
 
     if(archI!=NULL)     //si el archivo de entrada no existe o se genera algun error no hace nada
     {
-        buscaRotulo(&LR,archI,&tamanoCS,&tamanoDS,&tamanoES,&tamanoSS);
+        buscaRotulo(&LR,archI,&tamanoCS,&tamanoDS,&tamanoES,&tamanoSS,&LS);
        // Registros[0].ValorRegistro=contadorDS;
         InicializaHeader(header,tamanoCS,tamanoDS,tamanoES,tamanoSS);
         fseek(archI,0,SEEK_SET);
@@ -102,9 +113,29 @@ int main(int arg, char *args[])
                 }      
         }
 
+        while(LS!=NULL){      //inserto constantes string despues del CS
+            int i=0;
+            while (i<strlen(LS->valor)){
+                if (i==0){
+                int direccion=tamanoCS+1;
+                ListaRotulos aux;
+                aux= (ListaRotulos) malloc (sizeof(nodo));
+                aux->linea=direccion;
+                strcpy(aux->rotulo,LS->nombre);
+                aux->sig=LR;
+                LR=aux;
+            }
+                Memoria[++tamanoCS]=LS->valor[i];
+                i++;
+            }
+            LS=LS->sig;
+        }
+
         freeline(parsed);
       
         if(error==0){
+
+
             fwrite(Memoria,sizeof(__int32),j,archO);   
         }       
     }
@@ -236,7 +267,7 @@ void strToUpper(char palabra[]){      //Pasa a mayusculas el string que le manda
 
 }
 
-void buscaRotulo(ListaRotulos *LR, FILE *archA, int *tamanoCS, int *tamanoDS, int *tamanoES, int *tamanoSS){
+void buscaRotulo(ListaRotulos *LR, FILE *archA, int *tamanoCS, int *tamanoDS, int *tamanoES, int *tamanoSS, ListaString *LS){
     char instruccionAss[256];
     char **parsed;
     int valueConst;
@@ -251,19 +282,38 @@ void buscaRotulo(ListaRotulos *LR, FILE *archA, int *tamanoCS, int *tamanoDS, in
         if(!(parsed[0]==NULL && parsed[1]==NULL && parsed[2]==NULL && parsed[3]==NULL))
             i++;
         
+        if (parsed[5]!=NULL){
         strToUpper(parsed[5]);
         if(strcmp(parsed[5],"DATA")==0)
-            *tamanoDS = parsed[6];
+            *tamanoDS = atoi( parsed[6]);
         if(strcmp(parsed[5],"EXTRA")==0)
-            *tamanoES = parsed[6];
+            *tamanoES = atoi( parsed[6]);
         if(strcmp(parsed[5],"STACK")==0)
-            *tamanoSS = parsed[6];
+            *tamanoSS = atoi( parsed[6]);
+
+        printf("\n Tamaños asignados");
+
+        }
 
         if(parsed[7]!=NULL && parsed[8]!=NULL){
-            strToUpper(parsed[7]);
-            ingresarRotulo(LR,parsed[7],DevuelveConstantValue(parsed[8],LR));   //AGRAGAR LAS CONSTANTES STRING A UNA LISTA Y HACER TODA LA GILADA
+            char aux[20];
+            strcpy (aux,parsed[8]);
+            if (aux[1]!='\0'){
+           // if (parsed[8][1]!='\0'){
+          //  if (((parsed[8][0]>='a' && parsed[8][0]<='z') || (parsed[8][0]>='A' && parsed[8][0]<'Z' && )) && parsed[8][1]!='\0'){  //si es string (a ver)
+                strToUpper(parsed[7]);
+                strToUpper(parsed[8]);
+                ListaString aux;
+                aux= (ListaString) malloc (sizeof(nodoS));
+                strcpy(aux->nombre,parsed[7]);
+                strcpy(aux->valor,parsed[8]);
+                aux->sig=*LS;      //crear lista string
+                *LS=aux;
+            } else{      //no es string
+                ingresarRotulo(LR,parsed[7],DevuelveConstantValue(parsed[8]));   
+            }
         } else 
-            //error de una constante no definida
+            //error de una constante no definida 
         freeline(parsed);     
     }
     *tamanoCS = i;
@@ -299,10 +349,11 @@ void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemon
             char op1String[8], op2String[8];
             strcpy(op1String,parsed[2]);
             strcpy(op2String,parsed[3]);
+
             tipoOpe1 = tipoOperando(op1String,LR);
             tipoOpe2 = tipoOperando(op2String,LR);
-            op1 =transformaOperando(op1String,tipoOpe1,Registros,LR);
 
+            op1 =transformaOperando(op1String,tipoOpe1,Registros,LR);
             if (tipoOpe1==0){
                 if(op1>0XFFF){
                     op1 = op1 & 0XFFF;
@@ -428,8 +479,11 @@ __int32 DevuelveInmediato(char operando[], ListaRotulos LR){
 __int32 buscaRegistro(char operando[],TRegistros Registros[]){
     int i = 0;
 
-    while (i <= 15 && strcmp(Registros[i].nombre,operando)!=0)
+    while (i <= 15 && strcmp(Registros[i].nombre,operando)!=0){
         i++;
+    }
+        
+
     if (strcmp(Registros[i].nombre,operando)==0)
         return i;
     else
@@ -475,6 +529,7 @@ __int32 DevuelveRegistro(char operando[],TRegistros Registros[]){
 
     strToUpper(operando);
     res = buscaRegistro(operando,Registros);
+    printf("Registro encontrado: %d \n", res);
     if (res!=-1){ //registros de la primer columna (32 bits)
         return res;
     }else{  //puede ser que sea un registro inexistente o que sean los registros AX,AH,AL etc..
@@ -491,40 +546,101 @@ __int32 DevuelveRegistro(char operando[],TRegistros Registros[]){
             }
             aux = 10 + (operando[0] - 'A');
             return (seccionReg<<4) | aux; 
-        }else
+        }else{
+            printf("Devolviendo inexistente!!! \n");
             return 0XFFF; //registro inexistente. por ejemplo MM o EZX
+        }
     }
 
 }
 
 __int32 tipoOperando(char op[],ListaRotulos LR){
     char opPC = op[0];
+    char opUno= op[1];
     int Inmediato= (opPC=='#' || opPC=='@' || opPC=='%' || (opPC >= 48 && opPC <= 57) || opPC==39 ||opPC=='-' || rotuloInmediato(LR,op) ) ;
     int Directo= (opPC == '[');
+    int Indirecto=0;
+    if (opPC=='[' && (opUno=='E'))
+        Indirecto++;
     
-
-    if(Inmediato){
+    
+    if (Indirecto){
+        return 3;
+    } else if(Inmediato){
         return 0;
     } else if(Directo){
         return 2;
     } else {
         return 1; //de registro
     } 
-
 }
+
+__int32 DevuelveIndirecto(char operando[],TRegistros Registros[], ListaRotulos LR){
+    int direccion;
+
+     char *ope, reg[4];
+     ope = &operando[1];
+     ope[strlen(ope)-1]='\0';   
+     int i=9, k,j,res;
+     __int8 aux;
+     char simbol[11];
+
+for (i=0;i<3;i++)
+    reg[i]=ope[i];
+
+while (i<=15 && strcmp(reg,Registros[i].nombre)!=0)
+    i++;
+
+
+if (i>15)
+    printf("Registro inexistente");
+else{            
+    if (ope[3]=='+' || ope[3]=='-'){     //hay offset
+      if (ope[4]>='0' && ope[4]<='9'){  //si es un digito
+            printf("Offset digito \n");
+            k=4; 
+            j=0;
+            while (ope[k]!='\0'){
+                simbol[j++]=ope[k++];
+            }
+            aux=atoi(simbol);
+      } else{                       //offset simbolo
+            printf("Offset simbolo \n");
+            k=4;
+            j=0;
+            while(ope[k]!='\0')               
+                simbol[j++]=ope[k++];      
+            simbol[j]='\0';
+            while (LR!=NULL && strcmp(simbol,LR->rotulo)!=0)
+                LR=LR->sig;
+
+            printf("Valor Simbolo %s : %d \n", simbol, LR->linea);
+
+            if (LR!=NULL)
+                aux = LR->linea;
+            
+            
+      }
+      res = aux << 4 | (i & 0xF);
+    } else     //no hay offset
+        res = i & 0xF;      
+}
+return (res & 0xFFF);
+}
+
 
 __int32 transformaOperando(char operando[],int tipoOperando,TRegistros Registros[],ListaRotulos LR){
 
-    if(tipoOperando==0){
+    if (tipoOperando==3){
+        return DevuelveIndirecto(operando,Registros,LR);
+    } else if(tipoOperando==0){
         return DevuelveInmediato(operando,LR);
     } else if(tipoOperando==2){
-        return DevuelveDirecto(operando); // Aca iria devuelveDriecto
-    } else 
-        if (tipoOperando==1){
-            return DevuelveRegistro(operando,Registros); 
-        }
-        else
-            return -1; //Si no es de ningun tipo te tiene que tirar un error
+        return DevuelveDirecto(operando); 
+    } else if (tipoOperando==1){
+        return DevuelveRegistro(operando,Registros); 
+     } else
+        return -1; //Si no es de ningun tipo te tiene que tirar un error
 }
 
 int rotuloInmediato(ListaRotulos LR, char operando[]){
@@ -538,19 +654,23 @@ int rotuloInmediato(ListaRotulos LR, char operando[]){
 
   
 
-__int32 DevuelveConstantValue(char operando[], ListaStrings ){  //HAY QUE TERMINAR PASAR LAS CONSTANTES STRINGS A UNA LISTA
-        char *ope;
+__int32 DevuelveConstantValue(char operando[]){  
+        char *ope, *simbol;
         hexa_u_octal=0;
-        if(operando[0]== '-' || (operando[0] >= '0' && operando[0] <= '9'))
-            return atoi(operando);
-        else{
-            //if(operando[1]>=65 && operando[1]<=90 || (operando[1]>=97 && operando[1]<=122){
-            //    return operando[]
-            /*} else {*/
+        
+        if(operando[0]== '-' || (operando[0] >= '0' && operando[0] <= '9')) {
+             int k=0;
+            while(operando[k]!='\0')               
+                simbol[k]=operando[k++];   
+
+
+            simbol[k]='\0';
+            printf("Operando: %s \n", simbol);
+            return atoi(simbol);     
+        }else{
                 switch(operando[0]){ //Con esto vamos a devolver el valor en decimal.
                     case '#':
                         ope = &operando[1];
-
                         return atoi(ope);
                         break;
                     case 39: //Si es una letra.
