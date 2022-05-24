@@ -88,6 +88,24 @@ int main(int arg, char *args[])
     if(archI!=NULL)     //si el archivo de entrada no existe o se genera algun error no hace nada
     {
         buscaRotulo(&LR,archI,&tamanoCS,&tamanoDS,&tamanoES,&tamanoSS,&LS);
+
+        while(LS!=NULL){      //inserto constantes string despues del CS
+            int i=0;
+            while (i<=strlen(LS->valor)){
+                if (i==0){
+                int direccion=tamanoCS+1;
+                ListaRotulos aux;
+                aux= (ListaRotulos) malloc (sizeof(nodo));
+                aux->linea=direccion;
+                strcpy(aux->rotulo,LS->nombre);
+                aux->sig=LR;
+                LR=aux;
+            }
+                Memoria[++tamanoCS]=LS->valor[i];
+                i++;
+            }
+            LS=LS->sig;
+        }
        // Registros[0].ValorRegistro=contadorDS;
         InicializaHeader(header,tamanoCS,tamanoDS,tamanoES,tamanoSS);
         fseek(archI,0,SEEK_SET);
@@ -96,6 +114,9 @@ int main(int arg, char *args[])
                 Memoria[i] = header[i];
             }
       
+      
+        
+
 
         while (!feof(archI)){   
             char instruccionAss[256];
@@ -113,23 +134,6 @@ int main(int arg, char *args[])
                 }      
         }
 
-        while(LS!=NULL){      //inserto constantes string despues del CS
-            int i=0;
-            while (i<strlen(LS->valor)){
-                if (i==0){
-                int direccion=tamanoCS+1;
-                ListaRotulos aux;
-                aux= (ListaRotulos) malloc (sizeof(nodo));
-                aux->linea=direccion;
-                strcpy(aux->rotulo,LS->nombre);
-                aux->sig=LR;
-                LR=aux;
-            }
-                Memoria[++tamanoCS]=LS->valor[i];
-                i++;
-            }
-            LS=LS->sig;
-        }
 
         freeline(parsed);
       
@@ -236,6 +240,8 @@ void ingresarRotulo(ListaRotulos *LR, char rotulo[], int lineaRotulo)
     aux->sig = NULL;
     strcpy(aux->rotulo,rotulo);
 
+    //printf("Ingresando rotulo %s con valor %d \n", rotulo,lineaRotulo);
+
     if (*LR!=NULL)          //Ingresamos el rotulo siempre por cabecera
         aux->sig = *LR;
     *LR = aux;
@@ -298,9 +304,7 @@ void buscaRotulo(ListaRotulos *LR, FILE *archA, int *tamanoCS, int *tamanoDS, in
         if(parsed[7]!=NULL && parsed[8]!=NULL){
             char aux[20];
             strcpy (aux,parsed[8]);
-            if (aux[1]!='\0'){
-           // if (parsed[8][1]!='\0'){
-          //  if (((parsed[8][0]>='a' && parsed[8][0]<='z') || (parsed[8][0]>='A' && parsed[8][0]<'Z' && )) && parsed[8][1]!='\0'){  //si es string (a ver)
+            if (aux[1]!='\0' && aux[1]<'0' && aux[1]>'9'){
                 strToUpper(parsed[7]);
                 strToUpper(parsed[8]);
                 ListaString aux;
@@ -529,7 +533,6 @@ __int32 DevuelveRegistro(char operando[],TRegistros Registros[]){
 
     strToUpper(operando);
     res = buscaRegistro(operando,Registros);
-    printf("Registro encontrado: %d \n", res);
     if (res!=-1){ //registros de la primer columna (32 bits)
         return res;
     }else{  //puede ser que sea un registro inexistente o que sean los registros AX,AH,AL etc..
@@ -547,7 +550,6 @@ __int32 DevuelveRegistro(char operando[],TRegistros Registros[]){
             aux = 10 + (operando[0] - 'A');
             return (seccionReg<<4) | aux; 
         }else{
-            printf("Devolviendo inexistente!!! \n");
             return 0XFFF; //registro inexistente. por ejemplo MM o EZX
         }
     }
@@ -585,6 +587,7 @@ __int32 DevuelveIndirecto(char operando[],TRegistros Registros[], ListaRotulos L
      __int8 aux;
      char simbol[11];
 
+
 for (i=0;i<3;i++)
     reg[i]=ope[i];
 
@@ -605,7 +608,12 @@ else{
             }
             aux=atoi(simbol);
       } else{                       //offset simbolo
-            printf("Offset simbolo \n");
+         /*   printf("Offset simbolo \n");
+            ListaRotulos auxlista = LR;
+            while (auxlista!=NULL){
+                printf("Rotulo %s, valor: %d \n", auxlista->rotulo, auxlista->linea);
+                auxlista=auxlista->sig;
+            } */
             k=4;
             j=0;
             while(ope[k]!='\0')               
@@ -614,10 +622,12 @@ else{
             while (LR!=NULL && strcmp(simbol,LR->rotulo)!=0)
                 LR=LR->sig;
 
-            printf("Valor Simbolo %s : %d \n", simbol, LR->linea);
+            printf("Valor Simbolo %s = %d \n", simbol, LR->linea);
 
             if (LR!=NULL)
                 aux = LR->linea;
+
+            printf("Valor simbolo ya procesado: %d", aux);
             
             
       }
@@ -625,6 +635,7 @@ else{
     } else     //no hay offset
         res = i & 0xF;      
 }
+printf("Valor de devolucion: %#010x\n", res&0xFFF);
 return (res & 0xFFF);
 }
 
@@ -659,14 +670,7 @@ __int32 DevuelveConstantValue(char operando[]){
         hexa_u_octal=0;
         
         if(operando[0]== '-' || (operando[0] >= '0' && operando[0] <= '9')) {
-             int k=0;
-            while(operando[k]!='\0')               
-                simbol[k]=operando[k++];   
-
-
-            simbol[k]='\0';
-            printf("Operando: %s \n", simbol);
-            return atoi(simbol);     
+            return atoi(operando);     
         }else{
                 switch(operando[0]){ //Con esto vamos a devolver el valor en decimal.
                     case '#':
