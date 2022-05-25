@@ -52,6 +52,8 @@ __int32 recorreMnemonicos(elementosMnemonicos mnemonicos[],char* mnemonico);
 void strToUpper(char palabra[]);
 __int32 DevuelveConstantValue(char operando[]);
 __int32 DevuelveIndirecto(char operando[],TRegistros Registros[], ListaRotulos LR);
+int duplicado(ListaRotulos LR, char nombreSimbolo[20]);
+int duplicadoStr(ListaString LS, char nombreSimbolo[20]);
 
 int main(int arg, char *args[])
 {   
@@ -283,7 +285,14 @@ void buscaRotulo(ListaRotulos *LR, FILE *archA, int *tamanoCS, int *tamanoDS, in
         fgets(instruccionAss,256,archA);  //lee la linea correspondiente del archivo asm
         parsed = parseline(instruccionAss);
         if(parsed[0]!=NULL){
-            ingresarRotulo(LR,parsed[0],i);
+            char auxrotulo[20];
+            strcpy(auxrotulo,parsed[0]);
+            if (!duplicado(*LR,auxrotulo) && !duplicadoStr(*LS,auxrotulo))
+                ingresarRotulo(LR,parsed[0],i);
+            else{
+                printf("ERROR: Rotulo %s duplicado. Traduccion detenida\n");
+                exit(0);
+            }
         }
         if(!(parsed[0]==NULL && parsed[1]==NULL && parsed[2]==NULL && parsed[3]==NULL))
             i++;
@@ -303,25 +312,59 @@ void buscaRotulo(ListaRotulos *LR, FILE *archA, int *tamanoCS, int *tamanoDS, in
 
         if(parsed[7]!=NULL && parsed[8]!=NULL){
             char aux[20];
+            char auxnombre[20];
+            strToUpper(parsed[7]);
             strcpy (aux,parsed[8]);
-            if (aux[1]!='\0' && aux[1]<'0' && aux[1]>'9'){
-                strToUpper(parsed[7]);
-                strToUpper(parsed[8]);
-                ListaString aux;
-                aux= (ListaString) malloc (sizeof(nodoS));
-                strcpy(aux->nombre,parsed[7]);
-                strcpy(aux->valor,parsed[8]);
-                aux->sig=*LS;      //crear lista string
-                *LS=aux;
-            } else{      //no es string
-                ingresarRotulo(LR,parsed[7],DevuelveConstantValue(parsed[8]));   
+            strcpy (auxnombre,parsed[7]);
+            if ((auxnombre[0]<'0' || auxnombre[0]>'9') && strlen(auxnombre)>=3 && strlen(auxnombre)<=10){    //verifico que el nombre del simbolo tenga mas de 3 y menos de 10 caracteres. y que el primer caracter no sea un digito
+                if (aux[1]!='\0' && (aux[0]<'0' || aux[0]>'9')){    //si el valor del simbolo es un string
+                    if (!duplicado(*LR,auxnombre) && !duplicadoStr(*LS,auxnombre)){
+                        strToUpper(parsed[8]);
+                        ListaString aux;
+                        aux= (ListaString) malloc (sizeof(nodoS));
+                        strcpy(aux->nombre,parsed[7]);
+                        strcpy(aux->valor,parsed[8]);
+                        aux->sig=*LS;      //crear lista string
+                        *LS=aux;
+                    } else{
+                        printf("ERROR: Simbolo string %s duplicado. Traduccion detenida \n", auxnombre);
+                        exit(0);
+                    }
+                } else{      //no es string
+                    if (!duplicado(*LR,auxnombre) && !duplicadoStr(*LS,auxnombre)){
+                     // printf("Cargando simbolo no string %s \n", auxnombre);
+                      ingresarRotulo(LR,parsed[7],DevuelveConstantValue(parsed[8]));   
+                    }
+                    else{
+                      printf("ERROR: Simbolo %s duplicado. Deteniendo traduccion \n", auxnombre);
+                      exit(0);
+                    }
+                }
+            }else {
+                printf("ERROR: Simbolo %s invalido. Traduccion detenida \n", auxnombre);    //aca no se si ponerle un warning y que siga traduciendo o que cancele de una xd
+                exit(0);
             }
         } else 
             //error de una constante no definida 
         freeline(parsed);     
     }
     *tamanoCS = i;
+}
+
+int duplicadoStr(ListaString LS, char nombreSimbolo[20]){
+    ListaString aux = LS;
+    while (aux!=NULL && strcmp(nombreSimbolo,aux->nombre)!=0)
+        aux=aux->sig;
     
+    return aux!=NULL;     //si no se cayó es xq hay duplicado
+}
+
+int duplicado(ListaRotulos LR, char nombreSimbolo[20]){
+    ListaRotulos aux = LR;
+    while (aux!=NULL && strcmp(nombreSimbolo,aux->rotulo)!=0)
+        aux=aux->sig;
+    
+    return aux!=NULL;     //si no se cayó es xq hay duplicado
 }
 
 __int32 esRotulo(char ope[],ListaRotulos LR){
@@ -620,8 +663,12 @@ else{
                 auxRotulos=auxRotulos->sig;
 
             if (auxRotulos!=NULL)
-                aux = auxRotulos->linea;            
-            
+                aux = auxRotulos->linea;    
+            else{
+                printf("ERROR: Simbolo %s inexistente. Deteniendo traduccion \n", simbol);    
+                exit(0);
+            }
+    
       }
       res = aux << 4 | (i & 0xF);
     } else     //no hay offset
