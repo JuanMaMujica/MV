@@ -109,6 +109,8 @@ int main(int arg, char *args[])
             LS=LS->sig;
         }
        // Registros[0].ValorRegistro=contadorDS;
+        
+        printf("El tamanio del CS es de: %d \n", tamanoCS);
         InicializaHeader(header,tamanoCS,tamanoDS,tamanoES,tamanoSS);
         fseek(archI,0,SEEK_SET);
 
@@ -140,8 +142,6 @@ int main(int arg, char *args[])
         freeline(parsed);
       
         if(error==0){
-
-
             fwrite(Memoria,sizeof(__int32),j,archO);   
         }       
     }

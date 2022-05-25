@@ -161,8 +161,10 @@ void sys(__int32 *a){
     __int32 ax=(Registros[10].ValorRegistro & 0XFFFF);
     char straux[30],car[4],num1[4],num2[4];
 
-    //printf("%d", *a);
+    //printf("Entrando en el sys... valor de a: %d \n Valor del DS: %d. Valor del EDX:" , *a, ds, edx);
+
     if (*a == 0X1){
+        printf("Sys 1 \n");
         if (ax & 0x100){     //bit vale 1
             if (!(ax & 0x800)){                             // muestra prompt. si vale 1, no entra.
                 printf("[%d]:\t", edx+ds+j);
@@ -191,6 +193,7 @@ void sys(__int32 *a){
             }
         }
     } else if (*a==0X2){           //sys 2
+         printf("Sys 2 \n");
         for (i=0;i<cx;i++){
             if (!(ax & 0x800)){
                 printf("[%d]:\t", edx+ds+i);     
@@ -214,7 +217,7 @@ void sys(__int32 *a){
                 printf("\n");
             } 
         }
-    } else{         //sys f
+    } else if (*a=='F'){         //sys f
         if (banderas[0]) {   //si está -b
             
             if (banderas[1])
@@ -260,7 +263,45 @@ void sys(__int32 *a){
                 //printf("Continuando ejecucion...");
             }
         }
+    }  else if (*a==0X3){       //string read
+        printf("Sys 3 \n");
+        char aux[50];
+        if (!(ax & 0x800)){                            
+            printf("[%d]:\t", edx+ds);
+        } 
+        scanf("%s",aux);
+        i=0;
+       // printf("Longitud de la palabra: %d \n", strlen(aux));
+        while(i<strlen(aux) && i<cx){
+        //    printf ("Cargando caracter %c \n", aux[i]);
+            Memoria[edx+ds+i]=aux[i];
+            i++;
+        } 
+        Memoria[edx+ds+i]='\0';
+     } else if (*a==0x4){        //string write
+         printf("Sys 4 \n");
+        i=0;
+        if ((!(ax & 0x100))){    //printeo con endline
+            while (Memoria[edx+ds+i]!='\0'){  
+                if (!(ax & 0x800)){                            
+                      printf("[%d]:\t", edx+ds+i);
+                }  
+                printf("%c \n", Memoria[edx+ds+i]);
+                i++;
+            } 
+        } else{   //print sin endline
+            while (Memoria[edx+ds+i]!='\0'){   
+                if (!(ax & 0x800)){                            
+                      printf("[%d]:\t", edx+ds+i);
+                } 
+                printf("%c", Memoria[edx+ds+i]);
+                i++;
+            }
+        }
     }
+     else if (*a==0x7){
+         system("cls"); 
+     }
 }
 
 void stop(){
@@ -279,8 +320,8 @@ void main(int arg,char *args[]){
     InicializaRegistros();
     cargaMnemonicos();
     fread(Header,sizeof(__int32),6,archI);
-    fread(Memoria,sizeof(__int32),Header[1],archI);
-    Registros[0].ValorRegistro = Header[1];
+    fread(Memoria,sizeof(__int32),Header[4],archI);
+    Registros[0].ValorRegistro = Header[4];
     
 
     if(archI!=NULL){    

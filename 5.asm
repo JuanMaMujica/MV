@@ -1,4 +1,3 @@
-; Bueno, ya hemos terminado o casi...
         mov     [0], %62
         mov     [1], @165
         mov     [2], 101
