@@ -15,12 +15,20 @@ typedef struct {
     __int32 cod;
 } elementosMnemonicos;
 
+typedef struct nodo{
+    char nombreDisco[30];
+    short int numDisco;
+    struct nodo *sig;
+} nodo;
+
+typedef struct nodo *TListaDiscos;
 
 elementosMnemonicos mnemonicos[25];
 TRegistros Registros[16];
 __int32 Memoria[cantidadMR]={0};
 int banderas[5] = {0};
 int breakpoint = 0;
+TListaDiscos LD=NULL;
 
 //--------------------------------------Prototipos---------------------------------------------------
 void InicializaRegistros();
@@ -158,12 +166,13 @@ void sys(__int32 *a){
     __int32 cx=(Registros[12].ValorRegistro & 0XFFFF);
     __int32 ds=Registros[0].ValorRegistro;
     __int32 edx=Registros[13].ValorRegistro;
-    __int32 ax=(Registros[10].ValorRegistro & 0XFFFF);
+    __int32 ax=(Registros[10].ValorRegistro);
     char straux[30],car[4],num1[4],num2[4];
 
     //printf("Entrando en el sys... valor de a: %d \n Valor del DS: %d. Valor del EDX:" , *a, ds, edx);
 
     if (*a == 0X1){
+        ax= ax & 0xFFFF;
         printf("Sys 1 \n");
         if (ax & 0x100){     //bit vale 1
             if (!(ax & 0x800)){                             // muestra prompt. si vale 1, no entra.
@@ -193,6 +202,7 @@ void sys(__int32 *a){
             }
         }
     } else if (*a==0X2){           //sys 2
+          ax= ax & 0xFFFF;
          printf("Sys 2 \n");
         for (i=0;i<cx;i++){
             if (!(ax & 0x800)){
@@ -264,6 +274,7 @@ void sys(__int32 *a){
             }
         }
     }  else if (*a==0X3){       //string read
+        ax= ax & 0xFFFF;
         printf("Sys 3 \n");
         char aux[50];
         if (!(ax & 0x800)){                            
@@ -279,6 +290,7 @@ void sys(__int32 *a){
         } 
         Memoria[edx+ds+i]='\0';
      } else if (*a==0x4){        //string write
+         ax= ax & 0xFFFF;
          printf("Sys 4 \n");
         i=0;
         if ((!(ax & 0x100))){    //printeo con endline
@@ -301,13 +313,56 @@ void sys(__int32 *a){
     }
      else if (*a==0x7){
          system("cls"); 
+     } else if (*a=='D'){
+        __int16 DL = edx & 0xFFFF;
+        TListaDiscos aux=LD;
+        while (aux!=NULL && DL!=aux->numDisco){
+            aux=aux->sig;
+        }
+
+        if (aux==NULL){ //no existe el número disco
+
+
+        } else{  //encontré el número de disco
+            FILE *Disk = fopen(aux->nombreDisco,"r+");   //r+ permite leer y escribir
+            if (Disk==NULL){       //si no existe disco con ese nombre..
+
+
+            } else{
+            __int16 AH = (ax >> 16);
+            switch (AH)
+            {
+            case 0:   //consultar ultimo estado
+                break;
+
+            case 2:    //leer del disco
+                break;
+            
+            case 3:     //esceribir en el disco
+                break;
+
+            case 8:    //obtener parametros
+                break;
+            
+            default:
+                break;
+            }
+            }
+
+
+
+
+
+
+        } 
+
+
      }
 }
 
 void stop(){
     Registros[5].ValorRegistro = Registros[0].ValorRegistro;
 }
-
 
 //-----------------------------------------MV----------------------------------------------------------
 
@@ -319,14 +374,37 @@ void main(int arg,char *args[]){
 
     InicializaRegistros();
     cargaMnemonicos();
+    TListaDiscos discos=NULL;
     fread(Header,sizeof(__int32),6,archI);
     fread(Memoria,sizeof(__int32),Header[4],archI);
     Registros[0].ValorRegistro = Header[4];
     
+    FILE *archDiscos;
+    archDiscos = fopen(args[2],"rwb");
+    
+    TListaDiscos aux;
+    char disco[30];
+    int p=0;
+    while (fscanf(archDiscos,"%s",disco)==1){
+        aux= (TListaDiscos) malloc (sizeof(nodo));
+        strcpy(aux->nombreDisco,disco);
+        aux->sig=LD;
+        aux->numDisco=p;
+        p++;
+        LD=aux;
+    }
+
+    aux=LD;
+
+    while (aux!=NULL)
+    {
+        printf("Disco %s \n", aux->nombreDisco);
+        aux=aux->sig;
+    }
 
     if(archI!=NULL){    
-        if (arg>1){ //Si hay banderas, se fija cuáles están.
-            for (int i=2; i < arg; i++){
+        if (arg>2){ //Si hay banderas, se fija cuáles están.
+            for (int i=3; i < arg; i++){
                 if (strcmp(args[i], "-b") == 0){
                     banderas[0] = 1;
                 }

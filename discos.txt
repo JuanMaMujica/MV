@@ -1,0 +1,3 @@
+disco1.vdd
+disco2.vdd
+disco3.vdd
