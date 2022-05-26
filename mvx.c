@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #define cantidadMR 4096
+#define HD 512  //header de discos
 
 
 typedef struct TRegistros{
@@ -160,10 +161,12 @@ void not(__int32 *a){
     *a = ~(*a);
 }
 
+__int8 estado= 0x2; // codigo 2= no se hicieron operaciones. la hago global por si debo consultar con el %00??? 
+
 void sys(__int32 *a){
 
     int i,j=0,x,y;
-    __int32 cx=(Registros[12].ValorRegistro & 0XFFFF);
+    __int32 cx=(Registros[12].ValorRegistro);
     __int32 ds=Registros[0].ValorRegistro;
     __int32 edx=Registros[13].ValorRegistro;
     __int32 ax=(Registros[10].ValorRegistro);
@@ -173,6 +176,7 @@ void sys(__int32 *a){
 
     if (*a == 0X1){
         ax= ax & 0xFFFF;
+        cx= cx & 0xFFFF;
         printf("Sys 1 \n");
         if (ax & 0x100){     //bit vale 1
             if (!(ax & 0x800)){                             // muestra prompt. si vale 1, no entra.
@@ -202,6 +206,7 @@ void sys(__int32 *a){
             }
         }
     } else if (*a==0X2){           //sys 2
+          cx= cx & 0xFFFF;
           ax= ax & 0xFFFF;
          printf("Sys 2 \n");
         for (i=0;i<cx;i++){
@@ -274,6 +279,7 @@ void sys(__int32 *a){
             }
         }
     }  else if (*a==0X3){       //string read
+        cx= cx & 0xFFFF;
         ax= ax & 0xFFFF;
         printf("Sys 3 \n");
         char aux[50];
@@ -314,51 +320,91 @@ void sys(__int32 *a){
      else if (*a==0x7){
          system("cls"); 
      } else if (*a=='D'){
-        __int16 DL = edx & 0xFFFF;
+        __int16 DL = edx & 0xFFFF;  //numero de disco
         TListaDiscos aux=LD;
-        while (aux!=NULL && DL!=aux->numDisco){
+        while (aux!=NULL && DL!=aux->numDisco)
             aux=aux->sig;
-        }
+        
 
         if (aux==NULL){ //no existe el número disco
-
-
+            estado=0x31;
+            Registros[10].ValorRegistro = (estado << 16) | (Registros[10].ValorRegistro & 0xFFFF);
         } else{  //encontré el número de disco
-            FILE *Disk = fopen(aux->nombreDisco,"r+");   //r+ permite leer y escribir
-            if (Disk==NULL){       //si no existe disco con ese nombre..
-
-
+            FILE *Disk = fopen(aux->nombreDisco,"r+");   //r+ permite leer y escribir. abro el disco de posicion DL
+            if (Disk==NULL){       //si no existe disco con ese nombre hay que crear uno con valores default
+                Disk = fopen(aux->nombreDisco,"w+");    //w+ crea un archivo vacio para leer y escribir
+                fprintf(Disk,"%8X%8X%32X%8X%8X%2X%2X%2X%2X%2X%8X%422X",0x56444430,0x1,0x7ee914b137774e84b31387ee9bed04a2,0X1348A6D,0x00A12DE1,0x01,0x80,0x80,0x80,0x0200,0x0);
+                //este print feo setea los valores por defecto, revisar xd
             } else{
-            __int16 AH = (ax >> 16);
-            switch (AH)
-            {
-            case 0:   //consultar ultimo estado
-                break;
+            __int16 AH = (ax >> 16);      //numero operacion
+            if (!(AH!=0 && AH!=2 && AH!=8)){
+                __int32 ebx = Registros[11].ValorRegistro;    //1er celda de buffer de lectura/escritura
+                __int16 AL = (ax & 0xFFFF);     //sectores a leer/escribir
+                __int16 CH = (cx >> 16);          //num cilindro
+                __int16 CL = (cx & 0xFFFF);        //num cabeza
+                __int16 DH = (edx >> 16);          //sector
+                fseek(Disk,34,SEEK_SET);      //en el byte 34 está la cantidad de cilindros. segun google el fseek recorre por bytes.
+                __int16 C ;
+                fscanf(Disk,"%2X",&C);        //cantidad cilindros
+                if (CH<=C && CH>0){
+                     __int16 Ca;
+                    fscanf(Disk,"%2X",&Ca);        //cant cabezas (se usa en case 8)
+                    if (CL<=Ca && CL>0){
+                        __int16 S;
+                        fscanf(Disk,"%2X",&S);      //cantidad sectores
+                        if (DH<=S && DH>0){
+                            __int16 TS;
+                            fscanf(Disk,"%8X",&TS);   //tamaño del sector en bytes
+                            int res = HD + CH*C*S*TS + CL*S*TS + DH*TS;
+                            fseek(Disk,res+ebx,SEEK_SET);  //luego de leer el header agrego primer celda del buffer de lectura/escritura(ebx)
+                            char sector[TS];
+                            switch (AH)
+                            {
+                            case 0:   //consultar ultimo estado
+                            //este no entendí si quiere que consulte los codigos de estado o algun sector del disco. lo dejo por las dudas
+                                break;
+                            case 2:    //leer del disco. ver errores de lectura.
+                                for (int i=0;i<AL;i++){  //los printeo o donde los guardo?????????????????
+                                     fscanf(Disk,"%s",sector);   //leerá TS bytes
+                                }
+                                estado=0x0;
+                                break;
+                            
+                            case 3:     //esceribir en el disco. ver error de escritura
+                                for (int i=0;i<AL;i++){  
+                                     fprintf(Disk,"%s",sector);   //escribirá TS bytes? ver
+                                }
+                                estado=0x0;
+                                break;
 
-            case 2:    //leer del disco
-                break;
-            
-            case 3:     //esceribir en el disco
-                break;
-
-            case 8:    //obtener parametros
-                break;
-            
-            default:
-                break;
+                            case 8:    //obtener parametros
+                                Registros[12].ValorRegistro = ((C << 16) | Ca);  //devuelvo cant cilindros en CH y cant cabezas en CL
+                                Registros[13].ValorRegistro = (S << 16);  //devuelvo cant sectores en DH
+                                estado=0x0;
+                                break;
+                            
+                            default:
+                                break;
+                            }
+                        } else {
+                            estado=0x0D; //sector invalido
+                            Registros[10].ValorRegistro = (estado << 16) | (Registros[10].ValorRegistro & 0xFFFF);  //devuelvo el error en AH
+                        }
+                    } else {
+                        estado=0x0C;  //cabeza invalida
+                        Registros[10].ValorRegistro = (estado << 16) | (Registros[10].ValorRegistro & 0xFFFF);
+                    }
+                } else{
+                    estado=0x0B;  //cilindro invalido
+                    Registros[10].ValorRegistro = (estado << 16) | (Registros[10].ValorRegistro & 0xFFFF);
+                }
+            } else
+                estado=0x01;  //funcion invalida
             }
             }
-
-
-
-
-
-
         } 
-
-
      }
-}
+
 
 void stop(){
     Registros[5].ValorRegistro = Registros[0].ValorRegistro;
