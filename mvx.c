@@ -16,6 +16,20 @@ typedef struct {
     __int32 cod;
 } elementosMnemonicos;
 
+typedef struct{
+    char tipoArchivo[4];
+    __int32 numVersion;
+     char GUID[16];
+    __int32 fechaCreacion;
+    __int32 horaCreacion;
+    __int8 tipo;
+    __int8 cantCilindros;
+    __int8 cantCabezas;
+    __int8 cantSectores;
+    __int32 tamSector;
+    char relleno[211];
+} sectorDisco;
+
 typedef struct nodo{
     char nombreDisco[30];
     short int numDisco;
@@ -32,6 +46,7 @@ int breakpoint = 0;
 TListaDiscos LD=NULL;
 
 //--------------------------------------Prototipos---------------------------------------------------
+__int32 Header[6]={0};
 void InicializaRegistros();
 void cargaMnemonicos();
 void leeInstruccion();
@@ -166,17 +181,16 @@ __int8 estado= 0x2; // codigo 2= no se hicieron operaciones. la hago global por 
 void sys(__int32 *a){
 
     int i,j=0,x,y;
-    __int32 cx=(Registros[12].ValorRegistro);
+    __int16 cx=(Registros[12].ValorRegistro) & 0xFFFF;
     __int32 ds=Registros[0].ValorRegistro;
     __int32 edx=Registros[13].ValorRegistro;
-    __int32 ax=(Registros[10].ValorRegistro);
+    __int16 ax=(Registros[10].ValorRegistro) & 0xFFFF;
     char straux[30],car[4],num1[4],num2[4];
+    __int32 vector[128];
 
     //printf("Entrando en el sys... valor de a: %d \n Valor del DS: %d. Valor del EDX:" , *a, ds, edx);
 
     if (*a == 0X1){
-        ax= ax & 0xFFFF;
-        cx= cx & 0xFFFF;
         printf("Sys 1 \n");
         if (ax & 0x100){     //bit vale 1
             if (!(ax & 0x800)){                             // muestra prompt. si vale 1, no entra.
@@ -206,8 +220,6 @@ void sys(__int32 *a){
             }
         }
     } else if (*a==0X2){           //sys 2
-          cx= cx & 0xFFFF;
-          ax= ax & 0xFFFF;
          printf("Sys 2 \n");
         for (i=0;i<cx;i++){
             if (!(ax & 0x800)){
@@ -251,7 +263,7 @@ void sys(__int32 *a){
             } else if (car[0]>='0' && car[0]<='9'){          //si el primer caracter es un numero 
                 breakpoint = 0;
                 i=0;
-                while (car[i]!='\0' && car[i]!=' '){    //concateno el numero en el array num1 hasta que haya espacio o no haya nada (ya se que no sera negativo)
+                while (car[i]!='\0' && car[i]!=' '){    //concateno el numero en el vector num1 hasta que haya espacio o no haya nada (ya se que no sera negativo)
                     num1[i]=car[i];
                     i++;
                 }
@@ -319,67 +331,146 @@ void sys(__int32 *a){
     }
      else if (*a==0x7){
          system("cls"); 
-     } else if (*a=='D'){
-        __int16 DL = edx & 0xFFFF;  //numero de disco
+     } else if (*a==0xD){
+         printf("Entrando al SYS D \n");
+        
+         
+         printf("EDX: %X \n", edx);
+        __int16 DL = edx & 0xFF;  //numero de disco
+        __int32 ebx = Registros[11].ValorRegistro;    //1er celda de buffer de lectura/escritura. en EH esta el sector, en EL la celda 
+        __int16 EL= ebx & 0xFF;    // OFFSET del registro EH
+        __int16 EH = (ebx >> 16);    //segmento donde escribir/leer (DS o ES).
+
+
         TListaDiscos aux=LD;
+
         while (aux!=NULL && DL!=aux->numDisco)
             aux=aux->sig;
         
 
+        printf("El numero de disco es %d \n", aux->numDisco);
         if (aux==NULL){ //no existe el número disco
+            printf("No existe el numero de disco \n");
             estado=0x31;
-            Registros[10].ValorRegistro = (estado << 16) | (Registros[10].ValorRegistro & 0xFFFF);
+            Registros[10].ValorRegistro = (estado << 16) | (Registros[10].ValorRegistro & 0xFF);
         } else{  //encontré el número de disco
-            FILE *Disk = fopen(aux->nombreDisco,"r+");   //r+ permite leer y escribir. abro el disco de posicion DL
-            if (Disk==NULL){       //si no existe disco con ese nombre hay que crear uno con valores default
-                Disk = fopen(aux->nombreDisco,"w+");    //w+ crea un archivo vacio para leer y escribir
-                fprintf(Disk,"%8X%8X%32X%8X%8X%2X%2X%2X%2X%2X%8X%422X",0x56444430,0x1,0x7ee914b137774e84b31387ee9bed04a2,0X1348A6D,0x00A12DE1,0x01,0x80,0x80,0x80,0x0200,0x0);
-                //este print feo setea los valores por defecto, revisar xd
+            printf("Encontré el numero de disco. \n");
+            sectorDisco sec;
+            FILE *Disk = fopen(aux->nombreDisco,"rb+");   //r+ permite leer y escribir. abro el disco de posicion DL
+            if (Disk==NULL){       //si no existe disco con ese nombre hay que crear uno con valores default.
+                Disk = fopen(aux->nombreDisco,"wb+");    //w+ crea un archivo vacio para leer y escribir
+                printf("Creando archivo default!! \n");
+                sectorDisco sec;
+                strcpy(sec.tipoArchivo,"0x56444430");
+                sec.numVersion=0x1;
+                strcpy(sec.GUID,"0x7ee914b137774e84b31387ee9bed04a2");  //randomizar despues
+                sec.fechaCreacion=0X1348A6D;
+                sec.horaCreacion=0x00A12DE1;
+                sec.tipo=0x1;
+                sec.cantCilindros=0x80;
+                sec.cantCabezas=0x80;
+                sec.cantSectores=0x80;
+                sec.tamSector=0x200;
+                strcpy(sec.relleno,"-");
+                fwrite(&sec,sizeof(sectorDisco),1,Disk);
+                fseek(Disk,0,SEEK_SET);
             } else{
-            __int16 AH = (ax >> 16);      //numero operacion
-            if (!(AH!=0 && AH!=2 && AH!=8)){
-                __int32 ebx = Registros[11].ValorRegistro;    //1er celda de buffer de lectura/escritura
-                __int16 AL = (ax & 0xFFFF);     //sectores a leer/escribir
-                __int16 CH = (cx >> 16);          //num cilindro
-                __int16 CL = (cx & 0xFFFF);        //num cabeza
-                __int16 DH = (edx >> 16);          //sector
-                fseek(Disk,34,SEEK_SET);      //en el byte 34 está la cantidad de cilindros. segun google el fseek recorre por bytes.
-                __int16 C ;
-                fscanf(Disk,"%2X",&C);        //cantidad cilindros
+            printf("Abriendo disco %s \n", aux->nombreDisco);
+            __int8 AH = (ax >> 8);      //numero operacion
+            if (!(AH!=0x0 && AH!=0x2 && AH!=0x8 && AH!=0x3)){
+                printf("Operacion valida \n");
+                __int8 AL = (ax & 0xFF);     //cantidad sectores a leer/escribir
+                __int8 CH = (cx >> 8);          //num cilindro
+                __int8 CL = (cx & 0xFF);        //num cabeza
+                __int8 DH = ((edx & 0xFFFF) >> 8);          //sector
+                fread (&sec,sizeof(sectorDisco),1,Disk);
+
+                __int8 C =sec.cantCilindros;  //cantidad cilindros   
+                printf("C: %d CH: %d", C, CH);    
                 if (CH<=C && CH>0){
-                     __int16 Ca;
-                    fscanf(Disk,"%2X",&Ca);        //cant cabezas (se usa en case 8)
-                    if (CL<=Ca && CL>0){
-                        __int16 S;
-                        fscanf(Disk,"%2X",&S);      //cantidad sectores
+                    printf("Cilindro valido \n");
+                     __int8 Ca=sec.cantCabezas;          //cant cabezas (se usa en case 8)  
+                     printf(" Ca: %d CL: %d \n", Ca, CL);   
+                    if (CL<=Ca && CL>0){                //cantidad sectores
+                        printf("Cabeza valida \n");
+                        __int8 S=sec.cantSectores;           
                         if (DH<=S && DH>0){
-                            __int16 TS;
-                            fscanf(Disk,"%8X",&TS);   //tamaño del sector en bytes
+                            printf("Valores validos \n");
+                            __int32 TS=sec.tamSector;    //tamaño del sector en bytes  
                             int res = HD + CH*C*S*TS + CL*S*TS + DH*TS;
-                            fseek(Disk,res+ebx,SEEK_SET);  //luego de leer el header agrego primer celda del buffer de lectura/escritura(ebx)
-                            char sector[TS];
+                            fseek(Disk,res,SEEK_SET); 
                             switch (AH)
                             {
-                            case 0:   //consultar ultimo estado
+                            case 0x0:   //consultar ultimo estado
                             //este no entendí si quiere que consulte los codigos de estado o algun sector del disco. lo dejo por las dudas
                                 break;
-                            case 2:    //leer del disco. ver errores de lectura.
-                                for (int i=0;i<AL;i++){  //los printeo o donde los guardo?????????????????
-                                     fscanf(Disk,"%s",sector);   //leerá TS bytes
+                            case 0x2:    //leer del disco. ver errores de lectura.
+                                
+                                fread(&vector,sizeof(vector),1,Disk);
+                                //DS empieza en Header[4]
+                                if (EH == 0){      //DS
+                                    __int16 DSL = (Header[4]);     //primera celda del DS
+                                    __int16 DSH = (Header[4]+ Header[1]); //ultima celda del DS
+                                    for (j=0;j<AL;j++){             //itero la cantidad de sectores que me pide
+                                        if (DSL+EL>=DSL && DSL+EL+128<=DSL+DSH){      //verifico que estoy en rango del DS
+                                            for (i=0;i<128;i++){                //guardo un sector d 512 en memoria.
+                                                Memoria[DSL+EL+i]=vector[i];
+                                            }
+                                        }else{
+                                            printf("OVERFLOW!! \n");
+                                        }
+                                            if (CH==129){       //si es el ultimo cilindro
+                                                CH=1;
+                                                CL++;
+                                                if (CL==129){     //si es el ultimo cabezal
+                                                    CL=1;
+                                                    DH++;
+                                                    if (DH==129){     //si es el ultimo sector
+                                                        printf("Dirección inexistente!! \n");
+                                                    }
+                                                }
+                                            } 
+                                            int res = HD + CH*C*S*TS + CL*S*TS + DH*TS;
+                                            fseek(Disk,res,SEEK_SET); 
+                                            fread(&vector,sizeof(vector[128]),1,Disk);
+                                            CH++;    
+                                        }
+                                        DSL+=128;
+                                } 
+                                //ES empieza en Header[4] + Header[1]
+                                else if (EH == 2){   //ES
+                                    __int16 ESL = (Header[4])+(Header[1]);  //cs + ds. esto es donde empieza el ES
+                                    __int16 ESH = (Header[4])+(Header[1]) + (Header[3]); //cs + ds + es. Esto es donde termina el ES.
+                                    for (j=0;j<S;j++){
+                                        if (ESL+EL>=ESL && ESL+EL+128<=ESH){
+                                            for (i=0;i<128;i++){
+                                                Memoria[ESL+EL+i]=vector[i];
+                                            } 
+                                        } else{
+                                            printf("OVERFLOW!! \n");
+                                        }
+                                        ESL+=128;
+                                    }
+
+                                } else{
+                                    printf("Segmento invalido \n");
                                 }
                                 estado=0x0;
                                 break;
-                            
-                            case 3:     //esceribir en el disco. ver error de escritura
-                                for (int i=0;i<AL;i++){  
-                                     fprintf(Disk,"%s",sector);   //escribirá TS bytes? ver
-                                }
+                            case 0x3:     //esceribir en el disco. ver error de escritura
+                                //for i:= desde 1 hasta cant segmentos
+                                //funcion macabra
+                                //fseek resultado funcion macabra
+                                //cargar vector del ebx
+                                fwrite(&vector,sizeof(512),1,Disk);
                                 estado=0x0;
                                 break;
 
-                            case 8:    //obtener parametros
-                                Registros[12].ValorRegistro = ((C << 16) | Ca);  //devuelvo cant cilindros en CH y cant cabezas en CL
-                                Registros[13].ValorRegistro = (S << 16);  //devuelvo cant sectores en DH
+                            case 0x8:    //obtener parametros
+                                Registros[12].ValorRegistro = C;
+                                Registros[12].ValorRegistro = (Registros[12].ValorRegistro << 8) | Ca;   //devuelvo cant cilindros en CH y cant cabezas en CL
+                                Registros[13].ValorRegistro = S;
+                                Registros[13].ValorRegistro = Registros[13].ValorRegistro << 8;  //devuelvo cant sectores en DH
                                 estado=0x0;
                                 break;
                             
@@ -387,16 +478,19 @@ void sys(__int32 *a){
                                 break;
                             }
                         } else {
+                            printf("Sectores invalidos!! \n");
                             estado=0x0D; //sector invalido
-                            Registros[10].ValorRegistro = (estado << 16) | (Registros[10].ValorRegistro & 0xFFFF);  //devuelvo el error en AH
+                            Registros[10].ValorRegistro = (estado << 16) | (Registros[10].ValorRegistro & 0xFF);  //devuelvo el error en AH
                         }
                     } else {
+                        printf("Cabeza invalida! \n");
                         estado=0x0C;  //cabeza invalida
-                        Registros[10].ValorRegistro = (estado << 16) | (Registros[10].ValorRegistro & 0xFFFF);
+                        Registros[10].ValorRegistro = (estado << 16) | (Registros[10].ValorRegistro & 0xFF);
                     }
                 } else{
+                    printf("Cilindro invalido!!");
                     estado=0x0B;  //cilindro invalido
-                    Registros[10].ValorRegistro = (estado << 16) | (Registros[10].ValorRegistro & 0xFFFF);
+                    Registros[10].ValorRegistro = (estado << 16) | (Registros[10].ValorRegistro & 0xFF);
                 }
             } else
                 estado=0x01;  //funcion invalida
@@ -410,11 +504,15 @@ void stop(){
     Registros[5].ValorRegistro = Registros[0].ValorRegistro;
 }
 
+
+
+
+
 //-----------------------------------------MV----------------------------------------------------------
 
 void main(int arg,char *args[]){
     
-    __int32 Header[6]={0};
+    
     FILE *archI;
     archI = fopen(args[1],"rb");
 
@@ -423,7 +521,7 @@ void main(int arg,char *args[]){
     TListaDiscos discos=NULL;
     fread(Header,sizeof(__int32),6,archI);
     fread(Memoria,sizeof(__int32),Header[4],archI);
-    Registros[0].ValorRegistro = Header[4];
+    Registros[0].ValorRegistro = Header[4];   //donde comienza el DS
     
     FILE *archDiscos;
     archDiscos = fopen(args[2],"rwb");
@@ -476,13 +574,13 @@ void main(int arg,char *args[]){
 
 void InicializaRegistros(){
     strcpy(Registros[0].nombre,"DS "); Registros[0].ValorRegistro=0;
-    strcpy(Registros[1].nombre,"   "); Registros[1].ValorRegistro=0;
-    strcpy(Registros[2].nombre,"   "); Registros[2].ValorRegistro=0;
-    strcpy(Registros[3].nombre,"   "); Registros[3].ValorRegistro=0;
-    strcpy(Registros[4].nombre,"   "); Registros[4].ValorRegistro=0;
+    strcpy(Registros[1].nombre,"SS "); Registros[1].ValorRegistro=0;
+    strcpy(Registros[2].nombre,"ES "); Registros[2].ValorRegistro=0;
+    strcpy(Registros[3].nombre,"CS "); Registros[3].ValorRegistro=0;
+    strcpy(Registros[4].nombre,"HP "); Registros[4].ValorRegistro=0;
     strcpy(Registros[5].nombre,"IP "); Registros[5].ValorRegistro=0;
-    strcpy(Registros[6].nombre,"   "); Registros[6].ValorRegistro=0;
-    strcpy(Registros[7].nombre,"   "); Registros[7].ValorRegistro=0;
+    strcpy(Registros[6].nombre,"SP "); Registros[6].ValorRegistro=0;
+    strcpy(Registros[7].nombre,"BP "); Registros[7].ValorRegistro=0;
     strcpy(Registros[8].nombre,"CC "); Registros[8].ValorRegistro=0;
     strcpy(Registros[9].nombre,"AC "); Registros[9].ValorRegistro=0;
     strcpy(Registros[10].nombre,"EAX"); Registros[10].ValorRegistro=0;
