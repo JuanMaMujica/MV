@@ -61,7 +61,7 @@ int main(int arg, char *args[])
     int error=0; //equivale a 0 cuando no hay error, pasa a 1 cuando se encuentra un error
     int i=0,j=6,tamanoCS=0 ,tamanoDS=1024, tamanoES=1024, tamanoSS=1024;    //checkear cuando hay que sumar el numero de linea y cuando no
     __int32 header[6];
-    elementosMnemonicos mnemonicos[25];
+    elementosMnemonicos mnemonicos[28];
     ListaRotulos LR = NULL;
     ListaString LS=NULL;
     __int32 instruccionBin=0X0;
@@ -232,6 +232,13 @@ void cargaMnemonicos(elementosMnemonicos mnemonicos[])  //funcion que carga los 
     strcpy(mnemonicos[23].mnemonico,"NOT");
     mnemonicos[24].cod=0XFF1;
     strcpy(mnemonicos[24].mnemonico,"STOP");
+    mnemonicos[25].cod=0xC;
+    strcpy(mnemonicos[25].mnemonico,"SLEN");
+    mnemonicos[26].cod=0xD;
+    strcpy(mnemonicos[26].mnemonico,"SMOV");
+    mnemonicos[27].cod=0xE;
+    strcpy(mnemonicos[27].mnemonico,"SCMP");
+
 }
 
 void ingresarRotulo(ListaRotulos *LR, char rotulo[], int lineaRotulo)

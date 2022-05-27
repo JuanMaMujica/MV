@@ -1,1 +1,1 @@
-disko.vdd
+disk.vdd

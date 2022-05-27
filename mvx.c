@@ -3,6 +3,7 @@
 #include <string.h>
 #define cantidadMR 4096
 #define HD 512  //header de discos
+typedef unsigned char BYTE;
 
 
 typedef struct TRegistros{
@@ -17,15 +18,15 @@ typedef struct {
 } elementosMnemonicos;
 
 typedef struct{
-    char tipoArchivo[4];
+    char tipoArchivo[5];
     __int32 numVersion;
-     char GUID[16];
+     char GUID[33];
     __int32 fechaCreacion;
     __int32 horaCreacion;
-    __int8 tipo;
-    __int8 cantCilindros;
-    __int8 cantCabezas;
-    __int8 cantSectores;
+    BYTE tipo;
+    BYTE cantCilindros;
+    BYTE cantCabezas;
+    BYTE cantSectores;
     __int32 tamSector;
     char relleno[211];
 } sectorDisco;
@@ -59,6 +60,25 @@ void Dissasembler(int pos_memoria);
 
 
 //-------------------------------------------OPERACIONES--------------------------------------------------
+void slen(__int32 *a, __int32 *b){
+    int cont=0;
+    while (*b!=0){
+
+
+    }
+
+}
+
+void smov(__int32 *a, __int32 *b){
+
+
+}
+
+void scmp(__int32 *a, __int32 *b){
+
+
+}
+
 void mov(__int32 *a, __int32 *b){
     *a = *b;
 }
@@ -176,7 +196,7 @@ void not(__int32 *a){
     *a = ~(*a);
 }
 
-__int8 estado= 0x2; // codigo 2= no se hicieron operaciones. la hago global por si debo consultar con el %00??? 
+__int16 estado= 0x2; // codigo 2= no se hicieron operaciones. la hago global por si debo consultar con el %00??? 
 
 void sys(__int32 *a){
 
@@ -361,21 +381,23 @@ void sys(__int32 *a){
                 Disk = fopen(aux->nombreDisco,"wb+");    //w+ crea un archivo vacio para leer y escribir
                 printf("Creando archivo default!! \n");
                 sectorDisco sec;
-                strcpy(sec.tipoArchivo,"0x56444430");
+                strcpy(sec.tipoArchivo,"VDD0"); //0x56444430 es VDD0 en hexa. comprobadísimo
                 sec.numVersion=0x1;
-                strcpy(sec.GUID,"0x7ee914b137774e84b31387ee9bed04a2");  //randomizar despues
+                strcpy(sec.GUID,"7ee914b137774e84b31387ee9bed04a2");  //randomizar despues
                 sec.fechaCreacion=0X1348A6D;
                 sec.horaCreacion=0x00A12DE1;
                 sec.tipo=0x1;
                 sec.cantCilindros=0x80;
+                printf("La cantidad de cilindros sera de %d", sec.cantCilindros); //128 no entra en 8 bits!!!! por complemento a 2, va de -128 a 127 
                 sec.cantCabezas=0x80;
                 sec.cantSectores=0x80;
                 sec.tamSector=0x200;
-                strcpy(sec.relleno,"-");
+                strcpy(sec.relleno,"Relleno :)");
                 fwrite(&sec,sizeof(sectorDisco),1,Disk);
                 fseek(Disk,0,SEEK_SET);
             } else{
             printf("Abriendo disco %s \n", aux->nombreDisco);
+            
             __int8 AH = (ax >> 8);      //numero operacion
             if (!(AH!=0x0 && AH!=0x2 && AH!=0x8 && AH!=0x3)){
                 printf("Operacion valida \n");
@@ -384,16 +406,15 @@ void sys(__int32 *a){
                 __int8 CL = (cx & 0xFF);        //num cabeza
                 __int8 DH = ((edx & 0xFFFF) >> 8);          //sector
                 fread (&sec,sizeof(sectorDisco),1,Disk);
+                printf("Valores disco \n Tipo archivo: %s \n GUID: %s \n Cantidad de cilindros: %d \n Cantidad de cabezas: %d \n Cantidad de sectores: %d \n Tamanio de sector: %d \n \n", sec.tipoArchivo,sec.GUID,sec.cantCilindros,sec.cantCabezas,sec.cantSectores,sec.tamSector);
 
-                __int8 C =sec.cantCilindros;  //cantidad cilindros   
-                printf("C: %d CH: %d", C, CH);    
+
+                BYTE C =sec.cantCilindros;  //cantidad cilindros    
                 if (CH<=C && CH>0){
-                    printf("Cilindro valido \n");
-                     __int8 Ca=sec.cantCabezas;          //cant cabezas (se usa en case 8)  
-                     printf(" Ca: %d CL: %d \n", Ca, CL);   
+                     BYTE Ca=sec.cantCabezas;          //cant cabezas (se usa en case 8)  
+                     //printf(" Ca: %d CL: %d \n", Ca, CL);   
                     if (CL<=Ca && CL>0){                //cantidad sectores
-                        printf("Cabeza valida \n");
-                        __int8 S=sec.cantSectores;           
+                        BYTE S=sec.cantSectores;           
                         if (DH<=S && DH>0){
                             printf("Valores validos \n");
                             __int32 TS=sec.tamSector;    //tamaño del sector en bytes  
@@ -402,23 +423,89 @@ void sys(__int32 *a){
                             switch (AH)
                             {
                             case 0x0:   //consultar ultimo estado
-                            //este no entendí si quiere que consulte los codigos de estado o algun sector del disco. lo dejo por las dudas
+                                switch (estado)
+                                {
+                                case (0x0):
+                                    printf("Estado %2X: Operacion exitosa \n",estado);
+                                    break;
+                                case (0x1):
+                                    printf("Estado %2X: Funcion invalida \n",estado);
+                                    break;
+                                case (0x4):
+                                    printf("Estado %2X: Error de lectura \n",estado);
+                                    break;
+                                case (0xB):
+                                    printf("Estado %2X: Numero invalido de cilindro \n",estado);
+                                    break;
+                                case (0xC):
+                                    printf("Estado %2X: Numero invalido de cabeza \n",estado);
+                                    break;
+                                case (0xD):
+                                    printf("Estado %2X: Numero invalido de sector \n",estado);
+                                    break;
+                                case (0x31):
+                                    printf("Estado %2X: No existe el disco \n",estado);
+                                    break;
+                                case (0xCC):
+                                    printf("Estado %2X: Falla de escritura \n",estado);
+                                    break;
+                                case (0xFF):
+                                    printf("Estado %2X: Falla de operacion \n",estado);
+                                    break;
+                                default:
+                                    printf("No se han realizado operaciones en el disco \n");
+                                }
                                 break;
                             case 0x2:    //leer del disco. ver errores de lectura.
                                 
                                 fread(&vector,sizeof(vector),1,Disk);
                                 //DS empieza en Header[4]
                                 if (EH == 0){      //DS
-                                    __int16 DSL = (Header[4]);     //primera celda del DS
-                                    __int16 DSH = (Header[4]+ Header[1]); //ultima celda del DS
+                                    __int16 DSL = (Header[4]);     //primera celda del DS. 11
+                                    __int16 DSH = (Header[4]+ Header[1]); //ultima celda del DS. 1035
+                                    printf("Primera celda del DS: %d. \n Ultima celda del DS: %d", DSL,DSH);
                                     for (j=0;j<AL;j++){             //itero la cantidad de sectores que me pide
-                                        if (DSL+EL>=DSL && DSL+EL+128<=DSL+DSH){      //verifico que estoy en rango del DS
+                                        if (DSL+EL>=DSL && DSL+EL+128<=DSH){      //verifico que estoy en rango del DS      . ultima celda=1035
                                             for (i=0;i<128;i++){                //guardo un sector d 512 en memoria.
+                                                printf("Guardando en la seccion de memoria %d \n", DSL+EL+i);
                                                 Memoria[DSL+EL+i]=vector[i];
                                             }
+                                        if (CH==129){       //si es el ultimo cilindro
+                                                CH=1;
+                                                CL++;
+                                                if (CL==129){     //si es el ultimo cabezal
+                                                    CL=1;
+                                                    DH++;
+                                                    if (DH==129){     //si es el ultimo sector
+                                                        printf("Dirección inexistente!! \n");
+                                                    }
+                                                }
+                                            } 
+                                            int res = HD + CH*C*S*TS + CL*S*TS + DH*TS;
+                                            fseek(Disk,res,SEEK_SET); 
+                                            fread(&vector,sizeof(vector[128]),1,Disk);
+                                            CH++;    
+                                            DSL+=128; 
                                         }else{
-                                            printf("OVERFLOW!! \n");
+                                            estado=0x04;
+                                            printf("OVERFLOW!! \n");  //no deberia mostrarlo aca, sino cuando muestre el estado
+                                            //exit(0);
                                         }
+                                            
+                                        }       
+                                } 
+                                //ES empieza en Header[4] + Header[1]
+                                else if (EH == 2){   //ES
+                                    __int16 ESL = (Header[4])+(Header[1]);  //cs + ds. esto es donde empieza el ES
+                                    __int16 ESH = (Header[4])+(Header[1]) + (Header[3]); //cs + ds + es. Esto es donde termina el ES.
+                                   
+                                    printf("Primera celda del ES: %d. \n Ultima celda del ES: %d \n", ESL,ESH); //ESL=1035    ESH=2059
+                                    for (j=0;j<AL;j++){
+                                        if (ESL+EL>=ESL && ESL+EL+128<=ESH){ //1035+64+128<=2059
+                                            for (i=0;i<128;i++){
+                                                printf("Guardando en la seccion de memoria %d \n", ESL+EL+i);
+                                                Memoria[ESL+EL+i]=vector[i];    
+                                            } 
                                             if (CH==129){       //si es el ultimo cilindro
                                                 CH=1;
                                                 CL++;
@@ -434,22 +521,12 @@ void sys(__int32 *a){
                                             fseek(Disk,res,SEEK_SET); 
                                             fread(&vector,sizeof(vector[128]),1,Disk);
                                             CH++;    
-                                        }
-                                        DSL+=128;
-                                } 
-                                //ES empieza en Header[4] + Header[1]
-                                else if (EH == 2){   //ES
-                                    __int16 ESL = (Header[4])+(Header[1]);  //cs + ds. esto es donde empieza el ES
-                                    __int16 ESH = (Header[4])+(Header[1]) + (Header[3]); //cs + ds + es. Esto es donde termina el ES.
-                                    for (j=0;j<S;j++){
-                                        if (ESL+EL>=ESL && ESL+EL+128<=ESH){
-                                            for (i=0;i<128;i++){
-                                                Memoria[ESL+EL+i]=vector[i];
-                                            } 
+                                            ESL+=128;
                                         } else{
-                                            printf("OVERFLOW!! \n");
+                                            estado=0x04;
+                                            printf("OVERFLOW!! \n"); //no deberia mostrarlo aca, sino cuando muestre el estado
+                                            //exit(0);
                                         }
-                                        ESL+=128;
                                     }
 
                                 } else{
@@ -457,13 +534,76 @@ void sys(__int32 *a){
                                 }
                                 estado=0x0;
                                 break;
-                            case 0x3:     //esceribir en el disco. ver error de escritura
-                                //for i:= desde 1 hasta cant segmentos
-                                //funcion macabra
-                                //fseek resultado funcion macabra
-                                //cargar vector del ebx
-                                fwrite(&vector,sizeof(512),1,Disk);
-                                estado=0x0;
+                            case 0x3:    
+                                if (EH == 0){      //DS
+                                    __int16 DSL = (Header[4]);     //primera celda del DS. 11
+                                    __int16 DSH = (Header[4]+ Header[1]); //ultima celda del DS. 1035
+                                    printf("Primera celda del DS: %d. \n Ultima celda del DS \n: %d", DSL,DSH);
+                                    for (j=0;j<AL;j++){             //itero la cantidad de sectores que me pide
+                                        if (DSL+EL>=DSL && DSL+EL+128<=DSH){      //verifico que estoy en rango del DS      . ultima celda=1035
+                                            for (i=0;i<128;i++){                //guardo un sector d 512 en memoria.
+                                                printf("Leyendo de la seccion de memoria %d \n", DSL+EL+i);
+                                                vector[i]=Memoria[DSL+EL+i];
+                                            }
+                                        if (CH==129){       //si es el ultimo cilindro
+                                                CH=1;
+                                                CL++;
+                                                if (CL==129){     //si es el ultimo cabezal
+                                                    CL=1;
+                                                    DH++;
+                                                    if (DH==129){     //si es el ultimo sector
+                                                        printf("Dirección inexistente!! \n");
+                                                    }
+                                                }
+                                            } 
+                                            int res = HD + CH*C*S*TS + CL*S*TS + DH*TS;
+                                            fseek(Disk,res,SEEK_SET); 
+                                            fwrite(&vector,sizeof(vector[128]),1,Disk);
+                                            CH++;    
+                                            DSL+=128; 
+                                        }else{
+                                            estado=0xCC;
+                                            printf("OVERFLOW!! \n");  //no deberia mostrarlo aca, sino cuando muestre el estado
+                                          //  exit(0);
+                                        }
+                                            
+                                        }       
+                                } 
+                                //ES empieza en Header[4] + Header[1]
+                                else if (EH == 2){   //ES
+                                    __int16 ESL = (Header[4])+(Header[1]);  //cs + ds. esto es donde empieza el ES
+                                    __int16 ESH = (Header[4])+(Header[1]) + (Header[3]); //cs + ds + es. Esto es donde termina el ES.
+                                    printf("Primera celda del ES: %d. \n Ultima celda del ES: %d \n", ESL,ESH); //ESL=1035    ESH=2059
+                                    for (j=0;j<AL;j++){
+                                        if (ESL+EL>=ESL && ESL+EL+128<=ESH){ //1035+64+128<=2059
+                                            for (i=0;i<128;i++){
+                                                printf("Leyendo de la seccion de memoria %d \n", ESL+EL+i);
+                                                vector[i]=Memoria[ESL+EL+i];   
+                                            } 
+                                            if (CH==129){       //si es el ultimo cilindro
+                                                CH=1;
+                                                CL++;
+                                                if (CL==129){     //si es el ultimo cabezal
+                                                    CL=1;
+                                                    DH++;
+                                                    if (DH==129){     //si es el ultimo sector
+                                                        printf("Dirección inexistente!! \n");
+                                                    }
+                                                }
+                                            } 
+                                            int res = HD + CH*C*S*TS + CL*S*TS + DH*TS;
+                                            fseek(Disk,res,SEEK_SET); 
+                                            fwrite(&vector,sizeof(vector[128]),1,Disk);
+                                            CH++;    
+                                            ESL+=128;
+                                        } else{
+                                            estado=0xCC;
+                                            printf("OVERFLOW!! \n");  //no deberia mostrarlo aca, sino cuando muestre el estado
+                                          //  exit(0);
+                                        }
+                                    }
+
+                                } 
                                 break;
 
                             case 0x8:    //obtener parametros
@@ -649,7 +789,7 @@ void leeInstruccion(){
     __int32 sysB=0XF;
     int cantidadOperandos=0;
     __int32 instruccion,mnemonico,tipoOp1,tipoOp2,op1,op2,valorOp1,valorOp2,sectorOp2;
-    void (*fun[])(__int32 *, __int32 *) = {mov, add, sub,swap,mul,DIV,cmp,shl,shr,and,or,xor};
+    void (*fun[])(__int32 *, __int32 *) = {mov, add, sub,swap,mul,DIV,cmp,shl,shr,and,or,xor,slen,smov,scmp};
     void (*fun2[])(__int32 *) = {sys,jmp, jz,jp,JN,jnz,jnp,jnn,ldl,ldh,rnd,not};
 
     while (Registros[5].ValorRegistro>=0 && Registros[5].ValorRegistro<Registros[0].ValorRegistro){
@@ -762,6 +902,8 @@ __int32 decodificaOperando(__int32 op, __int32 tipoOp){
         }
     } else if(tipoOp == 2) {    //es directo
         valorOp = Memoria[op+Registros[0].ValorRegistro];
+    } else if (tipoOp == 3){
+
     }
     return valorOp; // si es inmediato lo devuelve igual
 }
