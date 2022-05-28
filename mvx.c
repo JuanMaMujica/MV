@@ -225,8 +225,8 @@ void sys(__int32 *a){
 
     int i,j=0,x,y;
     __int16 cx=(Registros[12].ValorRegistro) & 0xFFFF;
-    __int32 ds=Registros[0].ValorRegistro;
-    __int32 edx=Registros[13].ValorRegistro;
+    __int32 ds=Registros[0].ValorRegistro & 0xFFFF;
+    __int32 edx=Registros[13].ValorRegistro & 0xFFFF;
     __int16 ax=(Registros[10].ValorRegistro) & 0xFFFF;
     char straux[30],car[4],num1[4],num2[4];
     __int32 vector[128];
