@@ -61,22 +61,44 @@ void Dissasembler(int pos_memoria);
 
 //-------------------------------------------OPERACIONES--------------------------------------------------
 void slen(__int32 *a, __int32 *b){
-    int cont=0;
-    while (*b!=0){
-
-
-    }
-
+   __int8 res=0;
+   __int32 aux=*b;
+   while (Memoria[aux]!='\0')
+   {
+       res++;
+       aux++;
+   }
+   *a=res;
 }
 
 void smov(__int32 *a, __int32 *b){
-
-
+    __int32 pos1=*a;
+    __int32 pos2=*b;
+    while(Memoria[pos1]!='\0' && Memoria[pos2]!='\0'){
+        printf("Moviendo el caracter %c a la posicion %d \n", Memoria[pos2], pos1);
+        Memoria[pos1]=Memoria[pos2];
+        pos1++;
+        pos2++;
+    }
+    Memoria[pos1]='\0';
 }
 
 void scmp(__int32 *a, __int32 *b){
+    __int32 pos1=*a;
+    __int32 pos2=*b;
+    __int8 resta=0;
+    while(Memoria[pos1]!='\0' && Memoria[pos2]!='\0' && resta==0){
+        resta=Memoria[pos1]-Memoria[pos2];
+        pos1++;
+        pos2++;
+    }
 
-
+    if (resta<0)
+            Registros[8].ValorRegistro== 0x80000000;
+    else if (resta>0)
+            Registros[8].ValorRegistro=0x0;
+    else    
+        Registros[8].ValorRegistro=0X1;
 }
 
 void mov(__int32 *a, __int32 *b){
@@ -366,7 +388,6 @@ void sys(__int32 *a){
 
         while (aux!=NULL && DL!=aux->numDisco)
             aux=aux->sig;
-        
 
         printf("El numero de disco es %d \n", aux->numDisco);
         if (aux==NULL){ //no existe el número disco
@@ -783,6 +804,12 @@ void cargaMnemonicos()  //funcion que carga los mnemonicos con sus respectivos c
     strcpy(mnemonicos[23].mnemonico,"NOT");
     mnemonicos[24].cod=0XFF1;
     strcpy(mnemonicos[24].mnemonico,"STOP");
+    mnemonicos[25].cod=0xC;
+    strcpy(mnemonicos[25].mnemonico,"SLEN");
+    mnemonicos[26].cod=0xD;
+    strcpy(mnemonicos[26].mnemonico,"SMOV");
+    mnemonicos[27].cod=0xE;
+    strcpy(mnemonicos[27].mnemonico,"SCMP");
 }
 
 void leeInstruccion(){
@@ -902,8 +929,19 @@ __int32 decodificaOperando(__int32 op, __int32 tipoOp){
         }
     } else if(tipoOp == 2) {    //es directo
         valorOp = Memoria[op+Registros[0].ValorRegistro];
-    } else if (tipoOp == 3){
+    } else if (tipoOp == 3){   //indirecto
+        __int8 offset = valorOp >> 4;        
+        __int8 codReg = valorOp & 0xF;                                 //numero de registro que viene de la traduccion
+        __int32 codSeg = Registros[codReg].ValorRegistro >> 16;        // codigo del segmento al que referenciaré
+        __int32 seg = Registros[codSeg].ValorRegistro & 0xFFFF;        //donde comienza el segmento en memoria
+        __int32 tamSeg = Registros[codSeg].ValorRegistro >> 16;        //tamaño del segmento referenciado
+        __int32 valorRegistro = Registros[codReg].ValorRegistro & 0xFFFF;   //valor registro
 
+        if (seg+valorRegistro+offset<=tamSeg+seg){
+            valorOp= Memoria[seg+valorRegistro+offset];
+        } else{
+            printf("Te pasaste de segmento!! \n");
+        }
     }
     return valorOp; // si es inmediato lo devuelve igual
 }

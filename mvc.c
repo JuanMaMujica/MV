@@ -261,7 +261,7 @@ __int32 recorreMnemonicos(elementosMnemonicos mnemonicos[],char* mnemonico)
     int i=0;
     strToUpper(mnemonico);
 
-    while (strcmp(mnemonicos[i].mnemonico,mnemonico)!=0 && i<25){    //Busca el mnemonico en la lista de mnemonicos
+    while (strcmp(mnemonicos[i].mnemonico,mnemonico)!=0 && i<28){    //Busca el mnemonico en la lista de mnemonicos
         i++;
     }
     if(strcmp(mnemonicos[i].mnemonico,mnemonico)==0) {   //Si encuentra el mnemonico devuelve el codigo para la instruccion
@@ -641,7 +641,7 @@ __int32 DevuelveIndirecto(char operando[],TRegistros Registros[], ListaRotulos L
 for (i=0;i<3;i++)
     reg[i]=ope[i];
 
-while (i<=15 && strcmp(reg,Registros[i].nombre)!=0)
+while (i<=15 && strcmp(reg,Registros[i].nombre)!=0)  //busco el registro
     i++;
 
 
