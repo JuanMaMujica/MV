@@ -206,38 +206,40 @@ void cargaMnemonicos(elementosMnemonicos mnemonicos[])  //funcion que carga los 
     strcpy(mnemonicos[10].mnemonico,"OR");
     mnemonicos[11].cod=0XB;
     strcpy(mnemonicos[11].mnemonico,"XOR");
-    mnemonicos[12].cod=0XF0;
-    strcpy(mnemonicos[12].mnemonico,"SYS");
-    mnemonicos[13].cod=0XF1;
-    strcpy(mnemonicos[13].mnemonico,"JMP");
-    mnemonicos[14].cod=0XF2;
-    strcpy(mnemonicos[14].mnemonico,"JZ");
-    mnemonicos[15].cod=0XF3;
-    strcpy(mnemonicos[15].mnemonico,"JP");
-    mnemonicos[16].cod=0XF4;
-    strcpy(mnemonicos[16].mnemonico,"JN");
-    mnemonicos[17].cod=0XF5;
-    strcpy(mnemonicos[17].mnemonico,"JNZ");
-    mnemonicos[18].cod=0XF6;
-    strcpy(mnemonicos[18].mnemonico,"JNP");
-    mnemonicos[19].cod=0XF7;
-    strcpy(mnemonicos[19].mnemonico,"JNN");
-    mnemonicos[20].cod=0XF8;
-    strcpy(mnemonicos[20].mnemonico,"LDL");
-    mnemonicos[21].cod=0XF9;
-    strcpy(mnemonicos[21].mnemonico,"LDH");
-    mnemonicos[22].cod=0XFA;
-    strcpy(mnemonicos[22].mnemonico,"RND");
-    mnemonicos[23].cod=0XFB;
-    strcpy(mnemonicos[23].mnemonico,"NOT");
-    mnemonicos[24].cod=0XFF1;
-    strcpy(mnemonicos[24].mnemonico,"STOP");
-    mnemonicos[25].cod=0xC;
-    strcpy(mnemonicos[25].mnemonico,"SLEN");
-    mnemonicos[26].cod=0xD;
-    strcpy(mnemonicos[26].mnemonico,"SMOV");
-    mnemonicos[27].cod=0xE;
-    strcpy(mnemonicos[27].mnemonico,"SCMP");
+
+    mnemonicos[12].cod=0xC;
+    strcpy(mnemonicos[12].mnemonico,"SLEN");
+    mnemonicos[13].cod=0xD;
+    strcpy(mnemonicos[13].mnemonico,"SMOV");
+    mnemonicos[14].cod=0xE;
+    strcpy(mnemonicos[14].mnemonico,"SCMP");
+    mnemonicos[15].cod=0XF0;
+    strcpy(mnemonicos[15].mnemonico,"SYS");
+    mnemonicos[16].cod=0XF1;
+    strcpy(mnemonicos[16].mnemonico,"JMP");
+    mnemonicos[17].cod=0XF2;
+    strcpy(mnemonicos[17].mnemonico,"JZ");
+    mnemonicos[18].cod=0XF3;
+    strcpy(mnemonicos[18].mnemonico,"JP");
+    mnemonicos[19].cod=0XF4;
+    strcpy(mnemonicos[19].mnemonico,"JN");
+    mnemonicos[20].cod=0XF5;
+    strcpy(mnemonicos[20].mnemonico,"JNZ");
+    mnemonicos[21].cod=0XF6;
+    strcpy(mnemonicos[21].mnemonico,"JNP");
+    mnemonicos[22].cod=0XF7;
+    strcpy(mnemonicos[22].mnemonico,"JNN");
+    mnemonicos[23].cod=0XF8;
+    strcpy(mnemonicos[23].mnemonico,"LDL");
+    mnemonicos[24].cod=0XF9;
+    strcpy(mnemonicos[24].mnemonico,"LDH");
+    mnemonicos[25].cod=0XFA;
+    strcpy(mnemonicos[25].mnemonico,"RND");
+    mnemonicos[26].cod=0XFB;
+    strcpy(mnemonicos[26].mnemonico,"NOT");
+    mnemonicos[27].cod=0XFF1;
+    strcpy(mnemonicos[27].mnemonico,"STOP");
+    
 
 }
 
@@ -399,7 +401,7 @@ void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemon
   
     mnemonico=recorreMnemonicos(mnemonicos,parsed[1]);
     if(mnemonico!=0XFFFFFFFF && mnemonico!=0xFF1){ //si no hay error sigue con la ejecucion de la traduccion normal
-        if(mnemonico<=0XB){
+        if(mnemonico<=0XE){
             char op1String[15], op2String[15];
             strcpy(op1String,parsed[2]);
             strcpy(op2String,parsed[3]);

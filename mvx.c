@@ -74,13 +74,14 @@ void slen(__int32 *a, __int32 *b){
 void smov(__int32 *a, __int32 *b){
     __int32 pos1=*a;
     __int32 pos2=*b;
-    while(Memoria[pos1]!='\0' && Memoria[pos2]!='\0'){
+    printf("Entrando al SMOV \n");
+    while(Memoria[pos1]!=0 && Memoria[pos2]!=0){
         printf("Moviendo el caracter %c a la posicion %d \n", Memoria[pos2], pos1);
         Memoria[pos1]=Memoria[pos2];
         pos1++;
         pos2++;
     }
-    Memoria[pos1]='\0';
+    Memoria[pos1]=0;
 }
 
 void scmp(__int32 *a, __int32 *b){
@@ -682,7 +683,26 @@ void main(int arg,char *args[]){
     TListaDiscos discos=NULL;
     fread(Header,sizeof(__int32),6,archI);
     fread(Memoria,sizeof(__int32),Header[4],archI);
-    Registros[0].ValorRegistro = Header[4];   //donde comienza el DS
+    Registros[0].ValorRegistro = Header[4] | (Header[1]<<16);   //donde comienza el DS
+    Registros[1].ValorRegistro = (Header[1] + Header[4] + Header[3]) | (Header[2]<<16);
+    Registros[2].ValorRegistro = (Header[1] + Header[4]) | (Header[3]<<16);
+    Registros[3].ValorRegistro = Header[4]<<16;
+
+    for (int p=0;p<4;p++){
+        printf("Registro %d: %X \n", p,Registros[p].ValorRegistro);
+    }
+
+
+    //falta inicializar algunos registros
+
+  //CS DS ES SS
+
+    /* Header[0] = 0x4D562D31;
+    Header[1] = tamanoDS; 
+    Header[2] = tamanoSS; 
+    Header[3] = tamanoES; 
+    Header[4] = tamanoCS;
+    Header[5] = 0x562E3232; */
     
     FILE *archDiscos;
     archDiscos = fopen(args[2],"rwb");
@@ -778,38 +798,40 @@ void cargaMnemonicos()  //funcion que carga los mnemonicos con sus respectivos c
     strcpy(mnemonicos[10].mnemonico,"OR");
     mnemonicos[11].cod=0XB;
     strcpy(mnemonicos[11].mnemonico,"XOR");
-    mnemonicos[12].cod=0XF0;
-    strcpy(mnemonicos[12].mnemonico,"SYS");
-    mnemonicos[13].cod=0XF1;
-    strcpy(mnemonicos[13].mnemonico,"JMP");
-    mnemonicos[14].cod=0XF2;
-    strcpy(mnemonicos[14].mnemonico,"JZ");
-    mnemonicos[15].cod=0XF3;
-    strcpy(mnemonicos[15].mnemonico,"JP");
-    mnemonicos[16].cod=0XF4;
-    strcpy(mnemonicos[16].mnemonico,"JN");
-    mnemonicos[17].cod=0XF5;
-    strcpy(mnemonicos[17].mnemonico,"JNZ");
-    mnemonicos[18].cod=0XF6;
-    strcpy(mnemonicos[18].mnemonico,"JNP");
-    mnemonicos[19].cod=0XF7;
-    strcpy(mnemonicos[19].mnemonico,"JNN");
-    mnemonicos[20].cod=0XF8;
-    strcpy(mnemonicos[20].mnemonico,"LDL");
-    mnemonicos[21].cod=0XF9;
-    strcpy(mnemonicos[21].mnemonico,"LDH");
-    mnemonicos[22].cod=0XFA;
-    strcpy(mnemonicos[22].mnemonico,"RND");
-    mnemonicos[23].cod=0XFB;
-    strcpy(mnemonicos[23].mnemonico,"NOT");
-    mnemonicos[24].cod=0XFF1;
-    strcpy(mnemonicos[24].mnemonico,"STOP");
-    mnemonicos[25].cod=0xC;
-    strcpy(mnemonicos[25].mnemonico,"SLEN");
-    mnemonicos[26].cod=0xD;
-    strcpy(mnemonicos[26].mnemonico,"SMOV");
-    mnemonicos[27].cod=0xE;
-    strcpy(mnemonicos[27].mnemonico,"SCMP");
+
+    mnemonicos[12].cod=0xC;
+    strcpy(mnemonicos[12].mnemonico,"SLEN");
+    mnemonicos[13].cod=0xD;
+    strcpy(mnemonicos[13].mnemonico,"SMOV");
+    mnemonicos[14].cod=0xE;
+    strcpy(mnemonicos[14].mnemonico,"SCMP");
+    mnemonicos[15].cod=0XF0;
+    strcpy(mnemonicos[15].mnemonico,"SYS");
+    mnemonicos[16].cod=0XF1;
+    strcpy(mnemonicos[16].mnemonico,"JMP");
+    mnemonicos[17].cod=0XF2;
+    strcpy(mnemonicos[17].mnemonico,"JZ");
+    mnemonicos[18].cod=0XF3;
+    strcpy(mnemonicos[18].mnemonico,"JP");
+    mnemonicos[19].cod=0XF4;
+    strcpy(mnemonicos[19].mnemonico,"JN");
+    mnemonicos[20].cod=0XF5;
+    strcpy(mnemonicos[20].mnemonico,"JNZ");
+    mnemonicos[21].cod=0XF6;
+    strcpy(mnemonicos[21].mnemonico,"JNP");
+    mnemonicos[22].cod=0XF7;
+    strcpy(mnemonicos[22].mnemonico,"JNN");
+    mnemonicos[23].cod=0XF8;
+    strcpy(mnemonicos[23].mnemonico,"LDL");
+    mnemonicos[24].cod=0XF9;
+    strcpy(mnemonicos[24].mnemonico,"LDH");
+    mnemonicos[25].cod=0XFA;
+    strcpy(mnemonicos[25].mnemonico,"RND");
+    mnemonicos[26].cod=0XFB;
+    strcpy(mnemonicos[26].mnemonico,"NOT");
+    mnemonicos[27].cod=0XFF1;
+    strcpy(mnemonicos[27].mnemonico,"STOP");
+    
 }
 
 void leeInstruccion(){
@@ -819,7 +841,7 @@ void leeInstruccion(){
     void (*fun[])(__int32 *, __int32 *) = {mov, add, sub,swap,mul,DIV,cmp,shl,shr,and,or,xor,slen,smov,scmp};
     void (*fun2[])(__int32 *) = {sys,jmp, jz,jp,JN,jnz,jnp,jnn,ldl,ldh,rnd,not};
 
-    while (Registros[5].ValorRegistro>=0 && Registros[5].ValorRegistro<Registros[0].ValorRegistro){
+    while (Registros[5].ValorRegistro>=0 && Registros[5].ValorRegistro<Registros[0].ValorRegistro&0xFFFF){
 
         instruccion = Memoria[Registros[5].ValorRegistro];
         Registros[5].ValorRegistro++;
@@ -928,14 +950,19 @@ __int32 decodificaOperando(__int32 op, __int32 tipoOp){
             valorOp = Registros[registro].ValorRegistro & 0XFFFF;
         }
     } else if(tipoOp == 2) {    //es directo
+        //cambiar considerando los distintos segmentos
         valorOp = Memoria[op+Registros[0].ValorRegistro];
     } else if (tipoOp == 3){   //indirecto
-        __int8 offset = valorOp >> 4;        
+        __int8 offset = valorOp >> 4;                                   //offset
         __int8 codReg = valorOp & 0xF;                                 //numero de registro que viene de la traduccion
         __int32 codSeg = Registros[codReg].ValorRegistro >> 16;        // codigo del segmento al que referenciaré
         __int32 seg = Registros[codSeg].ValorRegistro & 0xFFFF;        //donde comienza el segmento en memoria
         __int32 tamSeg = Registros[codSeg].ValorRegistro >> 16;        //tamaño del segmento referenciado
         __int32 valorRegistro = Registros[codReg].ValorRegistro & 0xFFFF;   //valor registro
+
+        printf("Codigo registro: %X \n", codReg);
+        printf("Codigo de segmento: %d Tamano del segmento: %d \n", codSeg, tamSeg);
+        printf("Registro 0: %X \n",Registros[0].ValorRegistro);
 
         if (seg+valorRegistro+offset<=tamSeg+seg){
             valorOp= Memoria[seg+valorRegistro+offset];
@@ -963,13 +990,13 @@ void alamacenaRM(__int32 valorOp, __int32 tipoOp, __int32 op){
         }
       
     } else if(tipoOp == 2){ //de directo
-        Memoria[op+Registros[0].ValorRegistro] = valorOp;
+        Memoria[op+(Registros[0].ValorRegistro&0xFFFF)] = valorOp;
     }
 }
 
 void MuestraCodigo(){
     printf("Codigo:");
-    for (int i = 0; i < Registros[0].ValorRegistro; i++)
+    for (int i = 0; i < (Registros[0].ValorRegistro & 0xFFFF); i++)
         Dissasembler(i);
     //MUESTRA DE REGISTROS
     printf("\nRegistros:\n");
@@ -991,11 +1018,11 @@ void Dissasembler(int pos_memoria){
 
     if((inst & 0xFF000000) == 0xFF000000){ //Si es de 0 operandos
         nroMnemonico = (inst>>20)&0x00F;
-        printf("%s\t\t",mnemonicos[nroMnemonico + 23].mnemonico); //Mnemónico
+        printf("%s\t\t",mnemonicos[nroMnemonico + 26].mnemonico); //Mnemónico
     }
     else if((inst & 0xF0000000) == 0xF0000000){ //Si es de un operando
         nroMnemonico= ((inst&0x0F000000)>>24);
-        printf("%s\t\t",mnemonicos[nroMnemonico +12].mnemonico); //Mnemónico
+        printf("%s\t\t",mnemonicos[nroMnemonico + 15].mnemonico); //Mnemónico
         if((inst & 0x00C00000)==0x00800000){ //Directo
             printf("[%d]",inst&0x0000FFFF);
         }
