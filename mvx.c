@@ -76,11 +76,13 @@ void slen(__int32 *a, __int32 *b){
 void smov(__int32 *a, __int32 *b){
     __int32 pos1=*a;
     __int32 pos2=*b;
+    /*
     printf("Entrando al SMOV \n");
     printf("Memoria[%d]=%d \n",pos1,Memoria[pos1]);
     printf("Memoria[%d]=%d \n",pos2,Memoria[pos2]);
-    while(Memoria[pos2]!='\0'){
-        printf("Moviendo el caracter %c a la posicion %d \n", Memoria[pos2], pos1);
+    */
+    while((char)Memoria[pos2]!='\0'){
+        //printf("Moviendo el caracter %c a la posicion %d \n", Memoria[pos2], pos1);
         Memoria[pos1]=Memoria[pos2];
         //printf("Memoria[%d]: %c \n",pos1, Memoria[pos1]);
         pos1++;
@@ -95,22 +97,22 @@ void scmp(__int32 *a, __int32 *b){
     __int32 pos2=*b;
     __int8 resta=0;
     while(Memoria[pos1]!='\0' && Memoria[pos2]!='\0' && resta==0){        //si no tenemos en cuenta el primer caracter ANDA BIEN. probar con memoria[pos1+1] && memoria[pos2+1] en la condicion
-        printf("Restare %c - %c \n", Memoria[pos1], Memoria[pos2]);
+        //printf("Restare %c - %c \n", Memoria[pos1], Memoria[pos2]);
         resta=Memoria[pos1]-Memoria[pos2];
         pos1++;
         pos2++;
     }
 
     if (resta<0){
-            printf("a<b \n");
+            //printf("a<b \n");
             Registros[8].ValorRegistro== 0x80000000;
              }
     else if (resta>0){
             Registros[8].ValorRegistro=0x0;
-            printf("a>b \n");
+            //printf("a>b \n");
              }
     else    {
-        printf("a=b \n");
+        //printf("a=b \n");
         Registros[8].ValorRegistro=0X1;
 
     }
@@ -355,6 +357,7 @@ void sys(__int32 *a){
         if (!(ax & 0x800)){                            
             printf("[%d]:\t", edx+ds);
         } 
+        fflush(stdin);
         scanf("%s",aux);
         i=0;
        // printf("Longitud de la palabra: %d \n", strlen(aux));
@@ -758,12 +761,14 @@ int main(int arg,char *args[]){
             leeInstruccion();
         }
     }
-
-    if(Errores[0]) 
-        printf("El formato del archivo %s no es correcto", args[1]);
-    else if(Errores[1])   
-        printf("Memoria insuficiente");
-
+    else{
+        if(Errores[0]) 
+            printf("El formato del archivo %s no es correcto", args[1]);
+        else if(Errores[1])   
+            printf("Memoria insuficiente");
+    }    
+   
+    return 0;
 }
 
 void InicializaRegistros(){
@@ -772,9 +777,9 @@ void InicializaRegistros(){
     strcpy(Registros[2].nombre,"ES "); Registros[2].ValorRegistro = (Header[1] + Header[4]) | (Header[3]<<16);
     strcpy(Registros[3].nombre,"CS "); Registros[3].ValorRegistro = Header[4]<<16;
     strcpy(Registros[4].nombre,"HP "); Registros[4].ValorRegistro= 0x00020000;
-    strcpy(Registros[5].nombre,"IP "); Registros[5].ValorRegistro= 0;
-    strcpy(Registros[6].nombre,"SP "); Registros[6].ValorRegistro= 0x00030000;
-    strcpy(Registros[7].nombre,"BP "); Registros[7].ValorRegistro= 0x00030000;
+    strcpy(Registros[5].nombre,"IP "); Registros[5].ValorRegistro=0;
+    strcpy(Registros[6].nombre,"SP "); Registros[6].ValorRegistro= 0x00010000 | (Registros[1].ValorRegistro>>16 && 0xFFFF); 
+    strcpy(Registros[7].nombre,"BP "); Registros[7].ValorRegistro= 0x00010000;
     strcpy(Registros[8].nombre,"CC "); Registros[8].ValorRegistro=0;
     strcpy(Registros[9].nombre,"AC "); Registros[9].ValorRegistro=0;
     strcpy(Registros[10].nombre,"EAX"); Registros[10].ValorRegistro=0;
@@ -880,7 +885,7 @@ void cargaMnemonicos()  //funcion que carga los mnemonicos con sus respectivos c
         printf("El valor de mi registro es de %d \n", valorRegistro); */
 
         if (seg+valorRegistro+offset<=tamSeg+seg){
-            printf("La posicion de memoria es: %d y el valor es: %d",seg+valorRegistro+offset, seg+valorRegistro+offset);
+            //printf("La posicion de memoria es: %d y el valor es: %d",seg+valorRegistro+offset, seg+valorRegistro+offset);
             valorOp= seg+valorRegistro+offset;
         } else{
             printf("Te pasaste de segmento!! \n");
@@ -896,7 +901,7 @@ void leeInstruccion(){
     void (*fun[])(__int32 *, __int32 *) = {mov, add, sub,swap,mul,DIV,cmp,shl,shr,and,or,xor,slen,smov,scmp};
     void (*fun2[])(__int32 *) = {sys,jmp, jz,jp,JN,jnz,jnp,jnn,ldl,ldh,rnd,not};
 
-    while (Registros[5].ValorRegistro>=0 && Registros[5].ValorRegistro<Registros[0].ValorRegistro&0xFFFF){
+    while (Registros[5].ValorRegistro>=0 && Registros[5].ValorRegistro<(Registros[0].ValorRegistro&0xFFFF)){
 
         instruccion = Memoria[Registros[5].ValorRegistro];
         Registros[5].ValorRegistro++;
@@ -912,7 +917,6 @@ void leeInstruccion(){
                 valorOp1 = decodificaOperando(op1,tipoOp1);
                 valorOp2 = decodificaOperando(op2,tipoOp2);
             } else{
-                printf("Decodificando String\n \n");
                 valorOp1 = decodificaString(op1,tipoOp1);
                 valorOp2 = decodificaString(op2,tipoOp2);
 
@@ -939,9 +943,9 @@ void leeInstruccion(){
                 }
             }
             (*fun[mnemonico])(&valorOp1,&valorOp2); //llama a la instruccion correspondiente dependiendo del mnemonico
-            if(mnemonico!=0X6){ // alamcena los valores calculados anteriormente en los registros o memoria correspondiente menos en el cmp 
+            if(mnemonico!=0X6 && mnemonico != 0xE && mnemonico != 0xD){ // alamcena los valores calculados anteriormente en los registros o memoria correspondiente menos en el cmp 
                 alamacenaRM(valorOp1,tipoOp1,op1);
-                if(op1 != op2)
+                if(op1 != op2 && mnemonico != 0xC)
                     alamacenaRM(valorOp2,tipoOp2,op2);
             }
             if(mnemonico != 0X0 && mnemonico != 0X3 && mnemonico !=0X6 ){ // cambia el valor de CC seguun el resultado que se calcule
@@ -1029,7 +1033,7 @@ __int32 decodificaOperando(__int32 op, __int32 tipoOp){
         printf("El valor de mi registro es de %d \n", valorRegistro); */
 
         if (seg+valorRegistro+offset<=tamSeg+seg){
-            printf("La posicion de memoria es: %d y el valor es: %d",seg+valorRegistro+offset, Memoria[seg+valorRegistro+offset]);
+            //printf("La posicion de memoria es: %d y el valor es: %d",seg+valorRegistro+offset, Memoria[seg+valorRegistro+offset]);
             valorOp= Memoria[seg+valorRegistro+offset];
         } else{
             printf("Te pasaste de segmento!! \n");
