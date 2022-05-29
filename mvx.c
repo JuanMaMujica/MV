@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#define cantidadMR 4096
+#define cantidadMR 8192
 #define HD 512  //header de discos
 typedef unsigned char BYTE;
 
@@ -48,6 +48,7 @@ TListaDiscos LD=NULL;
 
 //--------------------------------------Prototipos---------------------------------------------------
 __int32 Header[6]={0};
+__int8 Errores[5]={0}; //Puede haber 5 errores en la ejecucion
 void InicializaRegistros();
 void cargaMnemonicos();
 void leeInstruccion();
@@ -81,12 +82,12 @@ void smov(__int32 *a, __int32 *b){
     while(Memoria[pos2]!='\0'){
         printf("Moviendo el caracter %c a la posicion %d \n", Memoria[pos2], pos1);
         Memoria[pos1]=Memoria[pos2];
-       // printf("Memoria[%d]: %c \n",pos1, Memoria[pos1]);
+        //printf("Memoria[%d]: %c \n",pos1, Memoria[pos1]);
         pos1++;
         pos2++;
     }
    // printf("Memoria[%d]: %c", *a, Memoria[*a]);
-    Memoria[pos1]='\0';
+   Memoria[pos1]='\0';
 }
 
 void scmp(__int32 *a, __int32 *b){         
@@ -685,96 +686,95 @@ void stop(){
 
 //-----------------------------------------MV----------------------------------------------------------
 
-void main(int arg,char *args[]){
+int main(int arg,char *args[]){
     
     
     FILE *archI;
     archI = fopen(args[1],"rb");
-
-    InicializaRegistros();
-    cargaMnemonicos();
-    TListaDiscos discos=NULL;
     fread(Header,sizeof(__int32),6,archI);
     fread(Memoria,sizeof(__int32),Header[4],archI);
-    Registros[0].ValorRegistro = Header[4] | (Header[1]<<16);   //donde comienza el DS
-    Registros[1].ValorRegistro = (Header[1] + Header[4] + Header[3]) | (Header[2]<<16);
-    Registros[2].ValorRegistro = (Header[1] + Header[4]) | (Header[3]<<16);
-    Registros[3].ValorRegistro = Header[4]<<16;
 
-    for (int p=0;p<4;p++){
-        printf("Registro %d: %X \n", p,Registros[p].ValorRegistro);
+    //Verifica Si la primer celda tiene MV-2 y la ultima V.22 --Error1 a detectar en ejecucion 
+    if(!(Header[0] == 0x4D562D31 && Header[5] == 0x562E3232)){
+         Errores[0] = 1;       
     }
-
-
-    //falta inicializar algunos registros
-
-  //CS DS ES SS
-
-    /* Header[0] = 0x4D562D31;
-    Header[1] = tamanoDS; 
-    Header[2] = tamanoSS; 
-    Header[3] = tamanoES; 
-    Header[4] = tamanoCS;
-    Header[5] = 0x562E3232; */
+    else if(!((Header[1]+Header[2]+Header[3]) <= (cantidadMR - Header[4]))){
+        Errores[1] = 1;    
+    }
     
-    FILE *archDiscos;
-    archDiscos = fopen(args[2],"rwb");
-    
-    TListaDiscos aux;
-    char disco[30];
-    int p=0;
-    while (fscanf(archDiscos,"%s",disco)==1){
-        aux= (TListaDiscos) malloc (sizeof(nodo));
-        strcpy(aux->nombreDisco,disco);
-        aux->sig=LD;
-        aux->numDisco=p;
-        p++;
-        LD=aux;
-    }
+    if(!(Errores[0] || Errores[1])){
+        cargaMnemonicos();
+        InicializaRegistros();
+        
+        /*
+        for (int p=0;p<4;p++){
+            printf("Registro %d: %X \n", p,Registros[p].ValorRegistro);
+        }
+        */
+        FILE *archDiscos;
+        TListaDiscos discos=NULL;
+        archDiscos = fopen(args[2],"rwb");
+        
+        TListaDiscos aux;
+        char disco[30];
+        int p=0;
+        while (fscanf(archDiscos,"%s",disco)==1){
+            aux= (TListaDiscos) malloc (sizeof(nodo));
+            strcpy(aux->nombreDisco,disco);
+            aux->sig=LD;
+            aux->numDisco=p;
+            p++;
+            LD=aux;
+        }
 
-    aux=LD;
+        aux=LD;
 
-    while (aux!=NULL)
-    {
-        printf("Disco %s \n", aux->nombreDisco);
-        aux=aux->sig;
-    }
+        while (aux!=NULL)
+        {
+            printf("Disco %s \n", aux->nombreDisco);
+            aux=aux->sig;
+        }
 
-    if(archI!=NULL){    
-        if (arg>2){ //Si hay banderas, se fija cuáles están.
-            for (int i=3; i < arg; i++){
-                if (strcmp(args[i], "-b") == 0){
-                    banderas[0] = 1;
-                }
-                if (strcmp(args[i], "-c") == 0){
-                    banderas[1] = 1;
-                }
-                if (strcmp(args[i], "-d") == 0){
-                    banderas[2] = 1;
+        if(archI!=NULL){    
+            if (arg>2){ //Si hay banderas, se fija cuáles están.
+                for (int i=3; i < arg; i++){
+                    if (strcmp(args[i], "-b") == 0){
+                        banderas[0] = 1;
+                    }
+                    if (strcmp(args[i], "-c") == 0){
+                        banderas[1] = 1;
+                    }
+                    if (strcmp(args[i], "-d") == 0){
+                        banderas[2] = 1;
+                    }
                 }
             }
+            if(banderas[1]){
+                system("cls");
+            }
+            if(banderas[2]){
+                MuestraCodigo();
+            }
+            leeInstruccion();
         }
-        if(banderas[1]){
-            system("cls");
-        }
-        if(banderas[2]){
-            MuestraCodigo();
-        }
-        leeInstruccion();
     }
 
+    if(Errores[0]) 
+        printf("El formato del archivo %s no es correcto", args[1]);
+    else if(Errores[1])   
+        printf("Memoria insuficiente");
 
 }
 
 void InicializaRegistros(){
-    strcpy(Registros[0].nombre,"DS "); Registros[0].ValorRegistro=0;
-    strcpy(Registros[1].nombre,"SS "); Registros[1].ValorRegistro=0;
-    strcpy(Registros[2].nombre,"ES "); Registros[2].ValorRegistro=0;
-    strcpy(Registros[3].nombre,"CS "); Registros[3].ValorRegistro=0;
-    strcpy(Registros[4].nombre,"HP "); Registros[4].ValorRegistro=0;
-    strcpy(Registros[5].nombre,"IP "); Registros[5].ValorRegistro=0;
-    strcpy(Registros[6].nombre,"SP "); Registros[6].ValorRegistro=0;
-    strcpy(Registros[7].nombre,"BP "); Registros[7].ValorRegistro=0;
+    strcpy(Registros[0].nombre,"DS "); Registros[0].ValorRegistro =  Header[4] | (Header[1]<<16); 
+    strcpy(Registros[1].nombre,"SS "); Registros[1].ValorRegistro = (Header[1] + Header[4] + Header[3]) | (Header[2]<<16);
+    strcpy(Registros[2].nombre,"ES "); Registros[2].ValorRegistro = (Header[1] + Header[4]) | (Header[3]<<16);
+    strcpy(Registros[3].nombre,"CS "); Registros[3].ValorRegistro = Header[4]<<16;
+    strcpy(Registros[4].nombre,"HP "); Registros[4].ValorRegistro= 0x00020000;
+    strcpy(Registros[5].nombre,"IP "); Registros[5].ValorRegistro= 0;
+    strcpy(Registros[6].nombre,"SP "); Registros[6].ValorRegistro= 0x00030000;
+    strcpy(Registros[7].nombre,"BP "); Registros[7].ValorRegistro= 0x00030000;
     strcpy(Registros[8].nombre,"CC "); Registros[8].ValorRegistro=0;
     strcpy(Registros[9].nombre,"AC "); Registros[9].ValorRegistro=0;
     strcpy(Registros[10].nombre,"EAX"); Registros[10].ValorRegistro=0;
