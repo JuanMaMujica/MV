@@ -68,6 +68,7 @@ void slen(__int32 *a, __int32 *b){
        res++;
        aux++;
    }
+  // printf("La longitud es de %d \n", res);
    *a=res;
 }
 
@@ -75,31 +76,43 @@ void smov(__int32 *a, __int32 *b){
     __int32 pos1=*a;
     __int32 pos2=*b;
     printf("Entrando al SMOV \n");
-    while(Memoria[pos1]!=0 && Memoria[pos2]!=0){
+    printf("Memoria[%d]=%d \n",pos1,Memoria[pos1]);
+    printf("Memoria[%d]=%d \n",pos2,Memoria[pos2]);
+    while(Memoria[pos2]!='\0'){
         printf("Moviendo el caracter %c a la posicion %d \n", Memoria[pos2], pos1);
         Memoria[pos1]=Memoria[pos2];
+       // printf("Memoria[%d]: %c \n",pos1, Memoria[pos1]);
         pos1++;
         pos2++;
     }
-    Memoria[pos1]=0;
+   // printf("Memoria[%d]: %c", *a, Memoria[*a]);
+    Memoria[pos1]='\0';
 }
 
-void scmp(__int32 *a, __int32 *b){
+void scmp(__int32 *a, __int32 *b){         
     __int32 pos1=*a;
     __int32 pos2=*b;
     __int8 resta=0;
-    while(Memoria[pos1]!='\0' && Memoria[pos2]!='\0' && resta==0){
+    while(Memoria[pos1]!='\0' && Memoria[pos2]!='\0' && resta==0){        //si no tenemos en cuenta el primer caracter ANDA BIEN. probar con memoria[pos1+1] && memoria[pos2+1] en la condicion
+        printf("Restare %c - %c \n", Memoria[pos1], Memoria[pos2]);
         resta=Memoria[pos1]-Memoria[pos2];
         pos1++;
         pos2++;
     }
 
-    if (resta<0)
+    if (resta<0){
+            printf("a<b \n");
             Registros[8].ValorRegistro== 0x80000000;
-    else if (resta>0)
+             }
+    else if (resta>0){
             Registros[8].ValorRegistro=0x0;
-    else    
+            printf("a>b \n");
+             }
+    else    {
+        printf("a=b \n");
         Registros[8].ValorRegistro=0X1;
+
+    }
 }
 
 void mov(__int32 *a, __int32 *b){
@@ -834,6 +847,48 @@ void cargaMnemonicos()  //funcion que carga los mnemonicos con sus respectivos c
     
 }
 
+ long decodificaString(__int32 op, __int32 tipoOp){
+    __int32 sectorRegistro;
+    __int32 registro;
+    __int32 valorOp = op;
+    if(tipoOp == 1){//es registro 
+        sectorRegistro = (op>>4)&0X3;
+        registro = op & 0XF;
+        if(sectorRegistro == 0){
+            valorOp = Registros[registro].ValorRegistro;
+        } else if(sectorRegistro==1){
+            valorOp = Registros[registro].ValorRegistro & 0XFF;
+        } else if(sectorRegistro==2){
+            valorOp =(Registros[registro].ValorRegistro & 0XFF00)>>8;
+        } else if(sectorRegistro==3){
+            valorOp = Registros[registro].ValorRegistro & 0XFFFF;
+        }
+    } else if(tipoOp == 2) {    //es directo
+        //cambiar considerando los distintos segmentos
+        valorOp = op+(Registros[0].ValorRegistro & 0xFFFF);
+    } else if (tipoOp == 3){   //indirecto.
+        __int8 offset = valorOp >> 4;                                   //offset
+        __int8 codReg = valorOp & 0xF;                                 //numero de registro que viene de la traduccion
+        __int32 codSeg = Registros[codReg].ValorRegistro >> 16;        // codigo del segmento al que referenciaré
+        __int32 seg = Registros[codSeg].ValorRegistro & 0xFFFF;        //donde comienza el segmento en memoria
+        __int32 tamSeg = Registros[codSeg].ValorRegistro >> 16;        //tamaño del segmento referenciado
+        __int32 valorRegistro = Registros[codReg].ValorRegistro & 0xFFFF;   //valor registro
+
+       /* printf("Codigo registro: %X \n", codReg);
+        printf("Codigo de segmento: %d Tamano del segmento: %d \n", codSeg, tamSeg);
+        printf("El segmento comienza en la celda %d \n", seg);
+        printf("El valor de mi registro es de %d \n", valorRegistro); */
+
+        if (seg+valorRegistro+offset<=tamSeg+seg){
+            printf("La posicion de memoria es: %d y el valor es: %d",seg+valorRegistro+offset, seg+valorRegistro+offset);
+            valorOp= seg+valorRegistro+offset;
+        } else{
+            printf("Te pasaste de segmento!! \n");
+        }
+    }
+    return valorOp; // si es inmediato lo devuelve igual
+} 
+
 void leeInstruccion(){
     __int32 sysB=0XF;
     int cantidadOperandos=0;
@@ -847,13 +902,21 @@ void leeInstruccion(){
         Registros[5].ValorRegistro++;
         
         mnemonico = leeMnemonico(instruccion,&cantidadOperandos);
+       // printf("Cod Mnemonico: %d\n", mnemonico);
         if(cantidadOperandos == 2){
             tipoOp1 = (instruccion >> 26) & 0X3;
             tipoOp2 = (instruccion >> 24) & 0X3;
             op1 = (instruccion >> 12) & 0XFFF;
-            op2 = instruccion & 0XFFF;
-            valorOp1 = decodificaOperando(op1,tipoOp1);
-            valorOp2 = decodificaOperando(op2,tipoOp2);
+            op2 = instruccion & 0XFFF;      
+            if (mnemonico!=0xC && mnemonico!=0xD && mnemonico!=0xE){
+                valorOp1 = decodificaOperando(op1,tipoOp1);
+                valorOp2 = decodificaOperando(op2,tipoOp2);
+            } else{
+                printf("Decodificando String\n \n");
+                valorOp1 = decodificaString(op1,tipoOp1);
+                valorOp2 = decodificaString(op2,tipoOp2);
+
+            } 
             sectorOp2 = op2>>4 & 0X3;
             if(tipoOp2 == 0){
                 valorOp2=valorOp2<<20;  //propaga el bit de signo de un operando inmediato negativo, de ser positivo no importa el corrimiento queda igual
@@ -951,8 +1014,8 @@ __int32 decodificaOperando(__int32 op, __int32 tipoOp){
         }
     } else if(tipoOp == 2) {    //es directo
         //cambiar considerando los distintos segmentos
-        valorOp = Memoria[op+Registros[0].ValorRegistro];
-    } else if (tipoOp == 3){   //indirecto
+        valorOp = Memoria[op+Registros[0].ValorRegistro & 0xFFFF];
+    } else if (tipoOp == 3){   //indirecto.
         __int8 offset = valorOp >> 4;                                   //offset
         __int8 codReg = valorOp & 0xF;                                 //numero de registro que viene de la traduccion
         __int32 codSeg = Registros[codReg].ValorRegistro >> 16;        // codigo del segmento al que referenciaré
@@ -960,11 +1023,13 @@ __int32 decodificaOperando(__int32 op, __int32 tipoOp){
         __int32 tamSeg = Registros[codSeg].ValorRegistro >> 16;        //tamaño del segmento referenciado
         __int32 valorRegistro = Registros[codReg].ValorRegistro & 0xFFFF;   //valor registro
 
-        printf("Codigo registro: %X \n", codReg);
+     /*   printf("Codigo registro: %X \n", codReg);
         printf("Codigo de segmento: %d Tamano del segmento: %d \n", codSeg, tamSeg);
-        printf("Registro 0: %X \n",Registros[0].ValorRegistro);
+        printf("El segmento comienza en la celda %d \n", seg);
+        printf("El valor de mi registro es de %d \n", valorRegistro); */
 
         if (seg+valorRegistro+offset<=tamSeg+seg){
+            printf("La posicion de memoria es: %d y el valor es: %d",seg+valorRegistro+offset, Memoria[seg+valorRegistro+offset]);
             valorOp= Memoria[seg+valorRegistro+offset];
         } else{
             printf("Te pasaste de segmento!! \n");
@@ -1001,7 +1066,7 @@ void MuestraCodigo(){
     //MUESTRA DE REGISTROS
     printf("\nRegistros:\n");
     for(int j = 0; j < 16; j++){
-        printf("%3s = %12d |", Registros[j].nombre, Registros[j].ValorRegistro);
+        printf("%3s = %12d |", Registros[j].nombre, Registros[j].ValorRegistro & 0xFFFF);
         if (j % 4 == 3)
             printf("\n");
     }
@@ -1048,7 +1113,7 @@ void Dissasembler(int pos_memoria){
                 }
             }
         }
-        else { //Supongo inmediato
+        else { //Supongo inmediato  //else PONER INDIRECTOS
             printf("%4d",inst&0x0000FFFF);
         }
     }
@@ -1080,7 +1145,7 @@ void Dissasembler(int pos_memoria){
                 }
             }
         }
-        else { // Si operando 1 es inmediato
+        else { // Si operando 1 es inmediato  //else PONER INDIRECTOS
             op=(inst&0x00FFF000)>>12;
             op=op<<20;
             op=op>>20;
@@ -1116,6 +1181,6 @@ void Dissasembler(int pos_memoria){
             op=op<<20;
             op=op>>20;
             printf("%d",op);
-        }
+        } //else PONER INDIRECTOS
     }
 }
