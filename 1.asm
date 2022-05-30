@@ -1,19 +1,11 @@
-
-\\DATA 1500
-\\EXTRA 1500
-MOV EDX, 123
-MOV CX, 50
-MOV AX, %000
-SYS %3
-SYS %4
-MOV EFX,123
-MOV EDX,200
-SYS %3
-SMOV [300],[EDX]
-SMOV [240],[EFX]
-MOV EDX,240
-SYS %4
-SLEN EBX,[240]
-SCMP [300],[240]
-SYS %F
+ldh 2
+ldl 64
+mov EBX, AC
+mov AH, %02
+mov AL, 3
+mov CH, 2
+mov CL, 8
+mov DH, 10
+mov DL, 0 
+sys %D
 STOP

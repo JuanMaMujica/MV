@@ -20,7 +20,7 @@ typedef struct {
 typedef struct{
     __int32 tipoArchivo;
     __int32 numVersion;
-    char GUID[32];
+    unsigned __int8 GUID[16];
     __int32 fechaCreacion;
     __int32 horaCreacion;
     BYTE tipo;
@@ -421,13 +421,19 @@ void sys(__int32 *a){
                 printf("Creando archivo default!! \n");
                 sectorDisco sec;
                 sec.tipoArchivo = 0x56444430; // es VDD0 en hexa. comprobadísimo
-                sec.numVersion=0x1;
-                strcpy(sec.GUID,"7ee914b137774e84b31387ee9bed04a2");  //randomizar despues
+                sec.numVersion=0x00000001;
+              //  __int64 auxiliar=rand();
+               for (int l=0;i<16;l++){
+                 sec.GUID[l]=rand();
+               }
+             //   sec.GUID="jh7ee914b137";
+              //  strcpy(sec.GUID,rand);  //randomizar despues
+            
                 sec.fechaCreacion=0X1348A6D;
                 sec.horaCreacion=0x00A12DE1;
                 sec.tipo=0x1;
                 sec.cantCilindros=0x80;
-                printf("La cantidad de cilindros sera de %d", sec.cantCilindros); //128 no entra en 8 bits!!!! por complemento a 2, va de -128 a 127 
+              //  printf("La cantidad de cilindros sera de %d", sec.cantCilindros); //128 no entra en 8 bits!!!! por complemento a 2, va de -128 a 127 
                 sec.cantCabezas=0x80;
                 sec.cantSectores=0x80;
                 sec.tamSector=0x200;
@@ -444,6 +450,27 @@ void sys(__int32 *a){
                 __int8 CH = (cx >> 8);          //num cilindro
                 __int8 CL = (cx & 0xFF);        //num cabeza
                 __int8 DH = ((edx & 0xFFFF) >> 8);          //sector
+                
+                BYTE headerDisco[512];  //BYTE = unsigned char
+            //    fread(&headerDisco,sizeof(512),1,Disk);
+                  sectorDisco secAux;
+                  fread(&secAux.tipoArchivo,sizeof(4),1,Disk);
+                  fread(&secAux.numVersion,sizeof(4),1,Disk);
+                  fread(&secAux.GUID,sizeof(16),1,Disk);
+                  fread(&secAux.fechaCreacion,sizeof(4),1,Disk);
+
+                  printf("Tipo archivo: %X \n Numero de version: %X \n %s", secAux.tipoArchivo,secAux.numVersion);
+                  printf("GUID: ");
+                  for (int l=0;l<16;l++){
+                      printf("%X \n", secAux.GUID[l]);
+                  }
+
+            /*    int l=0;
+                while (l<200)
+                {
+                    printf("Elemento %d: %X \n", l, headerDisco[l]);
+                    l++;
+                } */
                 
                 //fread (&sec,sizeof(sectorDisco),1,Disk);
                 printf("Valores disco \n Tipo archivo: %s \n GUID: %s \n Cantidad de cilindros: %d \n Cantidad de cabezas: %d \n Cantidad de sectores: %d \n Tamanio de sector: %d \n \n", sec.tipoArchivo,sec.GUID,sec.cantCilindros,sec.cantCabezas,sec.cantSectores,sec.tamSector);
