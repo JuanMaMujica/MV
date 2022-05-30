@@ -682,7 +682,43 @@ void sys(__int32 *a){
 void stop(){
     Registros[5].ValorRegistro = Registros[0].ValorRegistro;
 }
+//-------------------------PILA-------------------------
+/*
+void push(__int32 *a){
+    int SPL = Registros[6].ValorRegistro & 0xFFFF; //Tope de la pila
+    if (SPL == 0) // Stack Overflow.
+        Errores[3] = 1;
+    else{
+        SetParteBaja(6, SPL - 1); //Siempre guarda en la parte de arriba de la pila y decrementa el SPL.
+        SPL--;
+        ram[GetParteBaja(1) + SPL] = (*a); //GetParteBaja(1) = direccion del SS.
+    }
+}
 
+void pop(__int32 *a){
+    int SPL = GetParteBaja(6);
+    if(SPL > GetParteAlta(1))// Direccion SS + SPL
+        detiene_ejecucion=3; //Stack Underflow
+    else{
+        (*a) = ram[GetParteBaja(1) + SPL];
+        SetParteBaja(6, SPL + 1);
+    }
+}
+
+void call(__int32 *a){
+    int IP = Registros[5].ValorRegistro; //El IP ya fue incrementado antes en ejecución.
+    push(&IP);
+    if(detiene_ejecucion != 2) //El IP se pusheó bien
+        Registros[5].ValorRegistro = *a; //JMP operando
+}
+
+void ret(){
+    int IP;
+    pop(&IP); //Toma la dirección de la pila.
+    if(detiene_ejecucion!=3) //Si no hubo Underflow luego del pop.
+        Registros[5].ValorRegistro=IP; //Le asigna la dirección al registro IP.
+}
+*/
 
 
 
@@ -847,8 +883,16 @@ void cargaMnemonicos()  //funcion que carga los mnemonicos con sus respectivos c
     strcpy(mnemonicos[25].mnemonico,"RND");
     mnemonicos[26].cod=0XFB;
     strcpy(mnemonicos[26].mnemonico,"NOT");
-    mnemonicos[27].cod=0XFF1;
-    strcpy(mnemonicos[27].mnemonico,"STOP");
+    mnemonicos[27].cod = 0xFC;
+    strcpy(mnemonicos[27].mnemonico, "PUSH");
+    mnemonicos[28].cod = 0xFD;
+    strcpy(mnemonicos[28].mnemonico, "POP");
+    mnemonicos[29].cod = 0xFE;
+    strcpy(mnemonicos[29].mnemonico, "CALL");
+    mnemonicos[30].cod = 0xFF0;
+    strcpy(mnemonicos[30].mnemonico, "RET");
+    mnemonicos[31].cod = 0xFF1;
+    strcpy(mnemonicos[31].mnemonico, "STOP");
     
 }
 

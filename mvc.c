@@ -237,9 +237,16 @@ void cargaMnemonicos(elementosMnemonicos mnemonicos[])  //funcion que carga los 
     strcpy(mnemonicos[25].mnemonico,"RND");
     mnemonicos[26].cod=0XFB;
     strcpy(mnemonicos[26].mnemonico,"NOT");
-    mnemonicos[27].cod=0XFF1;
-    strcpy(mnemonicos[27].mnemonico,"STOP");
-    
+    mnemonicos[27].cod = 0xFC;
+    strcpy(mnemonicos[27].mnemonico, "PUSH");
+    mnemonicos[28].cod = 0xFD;
+    strcpy(mnemonicos[28].mnemonico, "POP");
+    mnemonicos[29].cod = 0xFE;
+    strcpy(mnemonicos[29].mnemonico, "CALL");
+    mnemonicos[30].cod = 0xFF0;
+    strcpy(mnemonicos[30].mnemonico, "RET");
+    mnemonicos[31].cod = 0xFF1;
+    strcpy(mnemonicos[31].mnemonico, "STOP");
 
 }
 
