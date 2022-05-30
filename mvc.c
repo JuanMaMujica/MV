@@ -69,7 +69,6 @@ int main(int arg, char *args[])
     char imprimir[3];
     FILE *archI;
     FILE *archO;
-    FILE *archTemp;
     archI=fopen(args[1],"rt");  //se abre el archivo de entrada para leer el programa assembler
     archO = fopen(args[2],"wb"); //se abre el archivo de salida de la traduccion para escritura en binario
 
