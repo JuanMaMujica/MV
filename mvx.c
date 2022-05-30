@@ -1106,10 +1106,14 @@ __int32 decodificaOperando(__int32 op, __int32 tipoOp){
             valorOp = Registros[registro].ValorRegistro & 0XFFFF;
         }
     } else if(tipoOp == 2) {    //es directo
-        //cambiar considerando los distintos segmentos
+       //cambiar considerando los distintos segmentos
         __int32 direccion = (Registros[0].ValorRegistro & 0xFFFF) + op;
-        if((direccion >= Registros[0].ValorRegistro & 0xFFFF) )           //&& direccion <= 
+        __int32 tamseg = Registros[0].ValorRegistro >> 16;
+        if((direccion >= Registros[0].ValorRegistro & 0xFFFF) && (direccion <= (Registros[0].ValorRegistro & 0xFFFF + tamseg)))
             valorOp = Memoria[op+Registros[0].ValorRegistro & 0xFFFF];
+        else{
+            Errores[2];
+        }
     } else if (tipoOp == 3){   //indirecto.
         __int8 offset = valorOp >> 4;                                   //offset
         __int8 codReg = valorOp & 0xF;                                 //numero de registro que viene de la traduccion
