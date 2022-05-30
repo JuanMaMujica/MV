@@ -69,7 +69,6 @@ int main(int arg, char *args[])
     char imprimir[3];
     FILE *archI;
     FILE *archO;
-    FILE *archTemp;
     archI=fopen(args[1],"rt");  //se abre el archivo de entrada para leer el programa assembler
     archO = fopen(args[2],"wb"); //se abre el archivo de salida de la traduccion para escritura en binario
 
@@ -359,8 +358,7 @@ void buscaRotulo(ListaRotulos *LR, FILE *archA, int *tamanoCS, int *tamanoDS, in
                 printf("ERROR: Simbolo %s invalido. Traduccion detenida \n", auxnombre);    //aca no se si ponerle un warning y que siga traduciendo o que cancele de una xd
                 error=1;
             }
-        } else 
-            printf("Constante mal definida");//error de una constante no definida 
+        }
         freeline(parsed);     
     }
     *tamanoCS = i;
