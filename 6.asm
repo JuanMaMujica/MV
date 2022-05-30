@@ -5,7 +5,7 @@
         mov     cx, 4
         sys     %5
         add     ex, 1
-        mov     [ex], dx
+        mov     [EAX], dx
 ; NEW 8 celdas -> DS[2]
         mov     cx, 8
         sys     %5

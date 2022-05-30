@@ -160,16 +160,16 @@ void InicializaHeader(__int32 Header[],int tamanoCS ,int tamanoDS, int tamanoES,
 }
 
 void InicializaRegistros(TRegistros Registros[]){
-    strcpy(Registros[0].nombre,"DS"); Registros[0].ValorRegistro=0;
-    strcpy(Registros[1].nombre,"SS"); Registros[1].ValorRegistro=0;
-    strcpy(Registros[2].nombre,"ES"); Registros[2].ValorRegistro=0;
-    strcpy(Registros[3].nombre,"CS"); Registros[3].ValorRegistro=0;
-    strcpy(Registros[4].nombre,"HP"); Registros[4].ValorRegistro=0;
-    strcpy(Registros[5].nombre,"IP"); Registros[5].ValorRegistro=0;
-    strcpy(Registros[6].nombre,"SP"); Registros[6].ValorRegistro=0;
-    strcpy(Registros[7].nombre,"BP"); Registros[7].ValorRegistro=0;
-    strcpy(Registros[8].nombre,"CC"); Registros[8].ValorRegistro=0;
-    strcpy(Registros[9].nombre,"AC"); Registros[9].ValorRegistro=0;
+    strcpy(Registros[0].nombre,"DS "); Registros[0].ValorRegistro=0;
+    strcpy(Registros[1].nombre,"SS "); Registros[1].ValorRegistro=0;
+    strcpy(Registros[2].nombre,"ES "); Registros[2].ValorRegistro=0;
+    strcpy(Registros[3].nombre,"CS "); Registros[3].ValorRegistro=0;
+    strcpy(Registros[4].nombre,"HP "); Registros[4].ValorRegistro=0;
+    strcpy(Registros[5].nombre,"IP "); Registros[5].ValorRegistro=0;
+    strcpy(Registros[6].nombre,"SP "); Registros[6].ValorRegistro=0;
+    strcpy(Registros[7].nombre,"BP "); Registros[7].ValorRegistro=0;
+    strcpy(Registros[8].nombre,"CC "); Registros[8].ValorRegistro=0;
+    strcpy(Registros[9].nombre,"AC "); Registros[9].ValorRegistro=0;
     strcpy(Registros[10].nombre,"EAX"); Registros[10].ValorRegistro=0;
     strcpy(Registros[11].nombre,"EBX"); Registros[11].ValorRegistro=0;
     strcpy(Registros[12].nombre,"ECX"); Registros[12].ValorRegistro=0;
@@ -284,7 +284,7 @@ void strToUpper(char palabra[]){      //Pasa a mayusculas el string que le manda
 
     for(int i=0;i<strlen(palabra);i++)
     {
-        palabra[i]=toupper(palabra[i]);
+         palabra[i]=toupper(palabra[i]);
     }
 
 }
@@ -592,7 +592,7 @@ __int32 DevuelveRegistro(char operando[],TRegistros Registros[]){
     if (res!=-1){ //registros de la primer columna (32 bits)
         return res;
     }else{  //puede ser que sea un registro inexistente o que sean los registros AX,AH,AL etc..
-        condicion = (operando[0] >= 'A' && operando[0] <= 'F');
+        condicion = ((operando[0] >= 'A' && operando[0] <= 'F') || (operando[0]=='S'));
         if ((condicion) && (operando[2]=='\0')) {
             switch (operando[1]) {
                 case 'X':  seccionReg = 3;  //11 en la seccion de registro
@@ -601,6 +601,7 @@ __int32 DevuelveRegistro(char operando[],TRegistros Registros[]){
                 break;
                 case 'H': seccionReg = 2;   //10 en la seccion de registro
                 break;
+                case 'P': seccionReg=0;
                 default: return 0XFFF;    //por ejemplo AZ
             }
             aux = 10 + (operando[0] - 'A');
@@ -617,10 +618,7 @@ __int32 tipoOperando(char op[],ListaRotulos LR){
     char opUno= op[1];
     int Inmediato= (opPC=='#' || opPC=='@' || opPC=='%' || (opPC >= 48 && opPC <= 57) || opPC==39 ||opPC=='-' || rotuloInmediato(LR,op) ) ;
     int Directo= (opPC == '[');
-    int Indirecto=0;
-    if (opPC=='[' && ((opUno=='E') || (opUno=='A' && op[2]=='C')))
-        Indirecto++;
-    
+    int Indirecto= opPC=='[' && ((opUno>='A' && opUno<='F') || (opUno>='a' && opUno<='f')) ;
     
     if (Indirecto){
         return 3;
@@ -639,22 +637,57 @@ __int32 DevuelveIndirecto(char operando[],TRegistros Registros[], ListaRotulos L
      char *ope, reg[4];
      ope = &operando[1];
      ope[strlen(ope)-1]='\0';   
-     int i=9, k,j,res;
+      strToUpper(ope);
+     int i=7, k,j,res;
      __int8 aux;
      char simbol[11];
 
+     int doscaracteres=0;
 
-for (i=0;i<3;i++)
+
+if (ope[0]=='A' || ope[0]=='B' || ope[0]=='C' || ope[0] == 'D' || ope[0] =='E'|| ope[0] =='F')
+{
+    if (ope[0]=='A' && ope[1]=='C'){
+        strcpy(reg,"AC ");
+        doscaracteres=1;
+    } else if(ope[0]=='B' && ope[1]=='P'){
+        strcpy(reg,"BP ");
+        doscaracteres=1;
+    }
+    else if (ope[0]=='E' && (ope[1]=='A' || ope[1]=='B' || ope[1]=='C' || ope[1] == 'D' || ope[1] =='E'|| ope[1] =='F')){
+        reg[0]=ope[0];
+        reg[1]=ope[1];
+        reg[2]=ope[2];
+        reg[3]='\0';
+    } else{
+        reg[0]='E';
+        reg[1]=ope[0];
+        reg[2]=ope[1];
+        reg[3]='\0';
+        doscaracteres=1;
+    }
+    
+} 
+
+printf("Reg: %s \n", reg);
+
+/* for (i=0;i<3;i++){
+    if (ope[0]=='A')
+
+
     reg[i]=ope[i];
+} */
 
-while (i<=15 && strcmp(reg,Registros[i].nombre)!=0)  //busco el registro
+while (i<=15 && strcmp(reg,Registros[i].nombre)!=0) {
+  //  printf("Elemento %d del registro: %s \n", i, Registros[i].nombre);
     i++;
-
+}
+    
 
 if (i>15)
     printf("Registro inexistente");
 else{            
-    if (ope[3]=='+' || ope[3]=='-'){     //hay offset
+    if (!doscaracteres && ope[3]=='+' || ope[3]=='-'){     //hay offset
       if (ope[4]>='0' && ope[4]<='9'){  //si es un digito
             printf("Offset digito \n");
             k=4; 
@@ -684,7 +717,36 @@ else{
     
       }
       res = aux << 4 | (i & 0xF);
-    } else     //no hay offset
+    } else if (doscaracteres && ope[2]=='+' || ope[2]=='-'){
+        if (ope[3]>='0' && ope[3]<='9'){  //si es un digito
+            printf("Offset digito 2 caracteres\n");
+            k=3; 
+            j=0;
+            while (ope[k]!='\0'){
+                simbol[j++]=ope[k++];
+            }
+            simbol[j]='\0';
+            aux=atoi(simbol);
+      } else{                 
+            k=3;
+            j=0;
+            while(ope[k]!='\0')               
+                simbol[j++]=ope[k++];      
+            simbol[j]='\0';
+
+            ListaRotulos auxRotulos = LR;
+            while (auxRotulos!=NULL && strcmp(simbol,auxRotulos->rotulo)!=0)
+                auxRotulos=auxRotulos->sig;
+
+            if (auxRotulos!=NULL)
+                aux = auxRotulos->linea;    
+            else{
+                printf("ERROR: Simbolo %s inexistente. Deteniendo traduccion \n", simbol);    
+                exit(0);
+            }
+      }
+      res = aux << 4 | (i & 0xF);
+    }  else  //no hay offset
         res = i & 0xF;      
 }
 return (res & 0xFFF);

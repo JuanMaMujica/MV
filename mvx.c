@@ -981,7 +981,6 @@ void leeInstruccion(){
     while (Registros[5].ValorRegistro >=0 && Registros[5].ValorRegistro<(Registros[0].ValorRegistro & 0xFFFF) && !(Errores[2] || Errores[3] || Errores[4])){
 
         instruccion = Memoria[Registros[5].ValorRegistro];
-        printf("%08X",instruccion);
         Registros[5].ValorRegistro++;
         
         mnemonico = leeMnemonico(instruccion,&cantidadOperandos);
@@ -1020,28 +1019,35 @@ void leeInstruccion(){
                     break;
                 }
             }
-            (*fun[mnemonico])(&valorOp1,&valorOp2); //llama a la instruccion correspondiente dependiendo del mnemonico
-            if(mnemonico!=0X6 && mnemonico != 0xE && mnemonico != 0xD){ // alamcena los valores calculados anteriormente en los registros o memoria correspondiente menos en el cmp 
-                alamacenaRM(valorOp1,tipoOp1,op1);
-                if(op1 != op2 && mnemonico != 0xC)
-                    alamacenaRM(valorOp2,tipoOp2,op2);
+            if (Errores[2]==0){
+                    (*fun[mnemonico])(&valorOp1,&valorOp2); //llama a la instruccion correspondiente dependiendo del mnemonico
+                if(mnemonico!=0X6 && mnemonico != 0xE && mnemonico != 0xD){ // alamcena los valores calculados anteriormente en los registros o memoria correspondiente menos en el cmp 
+                    alamacenaRM(valorOp1,tipoOp1,op1);
+                    if(op1 != op2 && mnemonico != 0xC)
+                        alamacenaRM(valorOp2,tipoOp2,op2);
+                }
+                if(mnemonico != 0X0 && mnemonico != 0X3 && mnemonico !=0X6 && mnemonico != 0XE && mnemonico != 0XD && mnemonico!= 0XC){ // cambia el valor de CC seguun el resultado que se calcule
+                    cambiaCC(valorOp1);
             }
-            if(mnemonico != 0X0 && mnemonico != 0X3 && mnemonico !=0X6 && mnemonico != 0XE && mnemonico != 0XD && mnemonico!= 0XC){ // cambia el valor de CC seguun el resultado que se calcule
-                cambiaCC(valorOp1);
             }
+            
             
 
         } else if(cantidadOperandos == 1){
             tipoOp1 = (instruccion>>22) & 0X3;
             op1 = instruccion & 0XFFFF; 
             valorOp1 = decodificaOperando(op1,tipoOp1);
-            (*fun2[instruccion>>24 & 0XF])(&valorOp1);
-            if (mnemonico==0XFA || mnemonico==0XFB){   // RND, NOT
-                alamacenaRM(valorOp1,tipoOp1,op1);
+            if (Errores[2]==0){
+                 (*fun2[instruccion>>24 & 0XF])(&valorOp1);
+                 if (mnemonico==0XFA || mnemonico==0XFB){   // RND, NOT
+                    alamacenaRM(valorOp1,tipoOp1,op1);
+                 }
+                if (mnemonico==0XFB){
+                    cambiaCC(valorOp1);
+                }
+
             }
-            if (mnemonico==0XFB){
-                cambiaCC(valorOp1);
-            }
+            
         } else {
             if(mnemonico == mnemonicos[31].cod)
                 stop();

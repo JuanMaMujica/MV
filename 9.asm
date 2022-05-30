@@ -1,6 +1,5 @@
-\\ASM DATA=1 EXTRA=0 STACK=70
 buffer  equ     0
-    mov     dx, buffer
+    mov     dx, 0
     mov     cx, 1
     mov     ax, %1    
     push    1
@@ -8,7 +7,7 @@ buffer  equ     0
     push    10
     call    fibo
     add     sp, 3
-    mov     [buffer], 1
+    mov     [0], 1
     sys     %2
     sys     %2
     sys     %F
@@ -27,7 +26,7 @@ fibo:   push    bp
         push    [bp+2]
         call    fibo
         add     sp, 3
-        mov     [buffer],[bp-1]
+        mov     [0],[bp-1]
         sys     %2        
 finf:   mov     sp, bp 
         pop     bp
