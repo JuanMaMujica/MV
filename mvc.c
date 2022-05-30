@@ -61,7 +61,7 @@ int main(int arg, char *args[])
     int error=0; //equivale a 0 cuando no hay error, pasa a 1 cuando se encuentra un error
     int i=0,j=6,tamanoCS=0 ,tamanoDS=1024, tamanoES=1024, tamanoSS=1024;    //checkear cuando hay que sumar el numero de linea y cuando no
     __int32 header[6];
-    elementosMnemonicos mnemonicos[28];
+    elementosMnemonicos mnemonicos[32];
     ListaRotulos LR = NULL;
     ListaString LS=NULL;
     __int32 instruccionBin=0X0;
@@ -270,7 +270,7 @@ __int32 recorreMnemonicos(elementosMnemonicos mnemonicos[],char* mnemonico)
     int i=0;
     strToUpper(mnemonico);
 
-    while (strcmp(mnemonicos[i].mnemonico,mnemonico)!=0 && i<28){    //Busca el mnemonico en la lista de mnemonicos
+    while (strcmp(mnemonicos[i].mnemonico,mnemonico)!=0 && i<32){    //Busca el mnemonico en la lista de mnemonicos
         i++;
     }
     if(strcmp(mnemonicos[i].mnemonico,mnemonico)==0) {   //Si encuentra el mnemonico devuelve el codigo para la instruccion

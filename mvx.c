@@ -39,7 +39,7 @@ typedef struct nodo{
 
 typedef struct nodo *TListaDiscos;
 
-elementosMnemonicos mnemonicos[25];
+elementosMnemonicos mnemonicos[32];
 TRegistros Registros[16];
 __int32 Memoria[cantidadMR]={0};
 int banderas[5] = {0};
@@ -709,25 +709,26 @@ int32_t GetParteBaja(int i){
 */
 
 //-------------------------PILA-------------------------
-/*
+
 void push(__int32 *a){
     int SPL = Registros[6].ValorRegistro & 0xFFFF; //Tope de la pila
     if (SPL == 0) // Stack Overflow.
-        Errores[3] = 1;
+       // Errores[3] = 1; hay que fijarse que error es
     else{
-        SetParteBaja(6, SPL - 1); //Siempre guarda en la parte de arriba de la pila y decrementa el SPL.
+        Registros[6].ValorRegistro-=1;
+        //SetParteBaja(6, SPL - 1); Siempre guarda en la parte de arriba de la pila y decrementa el SPL.
         SPL--;
-        ram[GetParteBaja(1) + SPL] = (*a); //GetParteBaja(1) = direccion del SS.
+        Memoria[Registros[1].ValorRegistro & 0XFFFF + SPL] = (*a); //GetParteBaja(1) = direccion del SS.
     }
 }
 
 void pop(__int32 *a){
-    int SPL = GetParteBaja(6);
-    if(SPL > GetParteAlta(1))// Direccion SS + SPL
-        detiene_ejecucion=3; //Stack Underflow
+    int SPL = Registros[6].ValorRegistro & 0XFFFF; //GetParteBaja(6);
+    if(SPL > Registros[1].ValorRegistro >> 16)// Direccion SS + SPL
+       // detiene_ejecucion=3; //Stack Underflow Este es otro error 
     else{
-        (*a) = ram[GetParteBaja(1) + SPL];
-        SetParteBaja(6, SPL + 1);
+        (*a) = Memoria[Registros[1].ValorRegistro & 0XFFFF + SPL];
+        Registros[6].ValorRegistro+=1; //SetParteBaja(6, SPL + 1);
     }
 }
 
@@ -744,7 +745,7 @@ void ret(){
     if(detiene_ejecucion!=3) //Si no hubo Underflow luego del pop.
         Registros[5].ValorRegistro=IP; //Le asigna la dirección al registro IP.
 }
-*/
+
 
 
 
@@ -939,7 +940,6 @@ void cargaMnemonicos()  //funcion que carga los mnemonicos con sus respectivos c
             valorOp = Registros[registro].ValorRegistro & 0XFFFF;
         }
     } else if(tipoOp == 2) {    //es directo
-        //cambiar considerando los distintos segmentos
         valorOp = op+(Registros[0].ValorRegistro & 0xFFFF);
     } else if (tipoOp == 3){   //indirecto.
         __int8 offset = valorOp >> 4;                                   //offset
@@ -969,7 +969,7 @@ void leeInstruccion(){
     int cantidadOperandos=0;
     __int32 instruccion,mnemonico,tipoOp1,tipoOp2,op1,op2,valorOp1,valorOp2,sectorOp2;
     void (*fun[])(__int32 *, __int32 *) = {mov, add, sub,swap,mul,DIV,cmp,shl,shr,and,or,xor,slen,smov,scmp};
-    void (*fun2[])(__int32 *) = {sys,jmp, jz,jp,JN,jnz,jnp,jnn,ldl,ldh,rnd,not};
+    void (*fun2[])(__int32 *) = {sys,jmp, jz,jp,JN,jnz,jnp,jnn,ldl,ldh,rnd,not,push,pop,call};
 
     while (Registros[5].ValorRegistro>=0 && Registros[5].ValorRegistro<(Registros[0].ValorRegistro&0xFFFF)){
 
@@ -1035,9 +1035,16 @@ void leeInstruccion(){
                 cambiaCC(valorOp1);
             }
         } else {
-            stop();
+            if(mnemonico == mnemonicos[31].cod)
+                stop();
+            else if (mnemonico == mnemonicos[30].cod)
+                ret();
+            else
+                printf("Flaco sos nefasto, pusiste algo mal");
+            
         }
-        if(breakpoint == 1 && mnemonico != mnemonicos[12].cod){
+        if(breakpoint == 1 && mnemonico != mnemonicos[15].cod){
+            
             sys(&sysB);
         }
     }  
