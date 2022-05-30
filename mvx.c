@@ -20,7 +20,7 @@ typedef struct {
 typedef struct{
     __int32 tipoArchivo;
     __int32 numVersion;
-    __int128_t GUID;
+    char GUID[32];
     __int32 fechaCreacion;
     __int32 horaCreacion;
     BYTE tipo;
