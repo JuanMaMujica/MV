@@ -39,6 +39,20 @@ typedef struct nodo{
 
 typedef struct nodo *TListaDiscos;
 
+typedef struct{
+    __int32 tipoArchivo;
+    __int32 numVersion;
+    unsigned char GUID[16];
+    __int32 fechaCreacion;
+    __int32 horaCreacion;
+    BYTE tipo;
+    BYTE cantCilindros;
+    BYTE cantCabezas;
+    BYTE cantSectores;
+    __int32 tamSector;
+    char relleno[211];
+} sectorDisco;
+
 elementosMnemonicos mnemonicos[32];
 TRegistros Registros[16];
 __int32 Memoria[cantidadMR]={0};
@@ -422,7 +436,8 @@ void sys(__int32 *a){
                 sectorDisco sec;
                 sec.tipoArchivo = 0x56444430; // es VDD0 en hexa. comprobadísimo
                 sec.numVersion=0x1;
-                strcpy(sec.GUID,"7ee914b137774e84b31387ee9bed04a2");  //randomizar despues
+                //strcpy(sec.GUID,"7ee914b137774e84b31387ee9bed04a2");  //randomizar despues
+                strcpy(sec.GUID,"x7ee137774");
                 sec.fechaCreacion=0X1348A6D;
                 sec.horaCreacion=0x00A12DE1;
                 sec.tipo=0x1;
@@ -444,6 +459,14 @@ void sys(__int32 *a){
                 __int8 CH = (cx >> 8);          //num cilindro
                 __int8 CL = (cx & 0xFF);        //num cabeza
                 __int8 DH = ((edx & 0xFFFF) >> 8);          //sector
+
+                fread (&sec,sizeof(sectorDisco),1,Disk);
+                printf("Valores disco \n Tipo archivo: %X  \n Cantidad de cilindros: %d \n Cantidad de cabezas: %d \n Cantidad de sectores: %d \n Tamanio de sector: %d \n \n", sec.tipoArchivo,sec.cantCilindros,sec.cantCabezas,sec.cantSectores,sec.tamSector);
+
+                printf("GUID: \t");
+                for (int l=0;l<16;l++){
+                    printf("%X", sec.GUID[l]);
+                }
                 
                 //fread (&sec,sizeof(sectorDisco),1,Disk);
                 printf("Valores disco \n Tipo archivo: %s \n GUID: %s \n Cantidad de cilindros: %d \n Cantidad de cabezas: %d \n Cantidad de sectores: %d \n Tamanio de sector: %d \n \n", sec.tipoArchivo,sec.GUID,sec.cantCilindros,sec.cantCabezas,sec.cantSectores,sec.tamSector);
@@ -1097,7 +1120,9 @@ __int32 decodificaOperando(__int32 op, __int32 tipoOp){
         }
     } else if(tipoOp == 2) {    //es directo
         //cambiar considerando los distintos segmentos
-        valorOp = Memoria[op+Registros[0].ValorRegistro & 0xFFFF];
+        __int32 direccion = (Registros[0].ValorRegistro & 0xFFFF) + op;
+        if((direccion >= Registros[0].ValorRegistro & 0xFFFF) && direccion <= )
+            valorOp = Memoria[op+Registros[0].ValorRegistro & 0xFFFF];
     } else if (tipoOp == 3){   //indirecto.
         __int8 offset = valorOp >> 4;                                   //offset
         __int8 codReg = valorOp & 0xF;                                 //numero de registro que viene de la traduccion
@@ -1110,12 +1135,16 @@ __int32 decodificaOperando(__int32 op, __int32 tipoOp){
         printf("Codigo de segmento: %d Tamano del segmento: %d \n", codSeg, tamSeg);
         printf("El segmento comienza en la celda %d \n", seg);
         printf("El valor de mi registro es de %d \n", valorRegistro); */
-
-        if (seg+valorRegistro+offset<=tamSeg+seg){
-            //printf("La posicion de memoria es: %d y el valor es: %d",seg+valorRegistro+offset, Memoria[seg+valorRegistro+offset]);
-            valorOp= Memoria[seg+valorRegistro+offset];
-        } else{
-            printf("Te pasaste de segmento!! \n");
+        if(seg >= 0 && seg<=3){
+            if (seg+valorRegistro+offset<=tamSeg+seg){
+                //printf("La posicion de memoria es: %d y el valor es: %d",seg+valorRegistro+offset, Memoria[seg+valorRegistro+offset]);
+                valorOp= Memoria[seg+valorRegistro+offset];
+            } else{
+                Errores[2];
+            }
+        }
+        else{    
+            Errores[2];
         }
     }
     return valorOp; // si es inmediato lo devuelve igual
