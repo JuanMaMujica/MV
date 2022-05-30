@@ -31,6 +31,7 @@ typedef struct nodo {
 typedef struct nodo* ListaRotulos;
 int hexa_u_octal;
  __int32 Memoria[8192]={0};
+int error = 0; //cuando hay un error se pone en 1
 
 //------------------------------------------TRADUCTOR MV----------------------------------------------------------
 int rotuloInmediato(ListaRotulos LR, char operando[]);
@@ -58,7 +59,7 @@ int duplicadoStr(ListaString LS, char nombreSimbolo[20]);
 int main(int arg, char *args[])
 {   
    
-    int error=0; //equivale a 0 cuando no hay error, pasa a 1 cuando se encuentra un error
+
     int i=0,j=6,tamanoCS=0 ,tamanoDS=1024, tamanoES=1024, tamanoSS=1024;    //checkear cuando hay que sumar el numero de linea y cuando no
     __int32 header[6];
     elementosMnemonicos mnemonicos[32];
@@ -137,8 +138,6 @@ int main(int arg, char *args[])
                     printf("%s\n",parsed[4]);
                 }      
         }
-
-
         freeline(parsed);
       
         if(error==0){
@@ -333,7 +332,7 @@ void buscaRotulo(ListaRotulos *LR, FILE *archA, int *tamanoCS, int *tamanoDS, in
             strcpy (aux,parsed[8]);
             strcpy (auxnombre,parsed[7]);
             if ((auxnombre[0]<'0' || auxnombre[0]>'9') && strlen(auxnombre)>=3 && strlen(auxnombre)<=10){    //verifico que el nombre del simbolo tenga mas de 3 y menos de 10 caracteres. y que el primer caracter no sea un digito
-                if (aux[1]!='\0' && (aux[0]<'0' || aux[0]>'9')){    //si el valor del simbolo es un string
+                if (aux[1]!='\0' && (aux[0]<'0' || aux[0]>'9' || aux[0]!='@' || aux[0]!='%' || aux[0]!='#')){    //si el valor del simbolo es un string
                     if (!duplicado(*LR,auxnombre) && !duplicadoStr(*LS,auxnombre)){
                         strToUpper(parsed[8]);
                         ListaString aux;
@@ -344,7 +343,7 @@ void buscaRotulo(ListaRotulos *LR, FILE *archA, int *tamanoCS, int *tamanoDS, in
                         *LS=aux;
                     } else{
                         printf("ERROR: Simbolo string %s duplicado. Traduccion detenida \n", auxnombre);
-                        exit(0);
+                        error=1;
                     }
                 } else{      //no es string
                     if (!duplicado(*LR,auxnombre) && !duplicadoStr(*LS,auxnombre)){
@@ -352,16 +351,16 @@ void buscaRotulo(ListaRotulos *LR, FILE *archA, int *tamanoCS, int *tamanoDS, in
                       ingresarRotulo(LR,parsed[7],DevuelveConstantValue(parsed[8]));   
                     }
                     else{
-                      printf("ERROR: Simbolo %s duplicado. Deteniendo traduccion \n", auxnombre);
-                      exit(0);
+                        printf("ERROR: Simbolo %s duplicado. Deteniendo traduccion \n", auxnombre);
+                        error=1;
                     }
                 }
             }else {
                 printf("ERROR: Simbolo %s invalido. Traduccion detenida \n", auxnombre);    //aca no se si ponerle un warning y que siga traduciendo o que cancele de una xd
-                exit(0);
+                error=1;
             }
         } else 
-            //error de una constante no definida 
+            printf("Constante mal definida");//error de una constante no definida 
         freeline(parsed);     
     }
     *tamanoCS = i;
@@ -744,7 +743,6 @@ __int32 DevuelveConstantValue(char operando[]){
                         ope = &operando[1];
                         return strtoul(ope, NULL, 16);
                         break;
-                    case 34:
                     default:
                         return -1;  // Utilizamos -1 para decir que es un error de sintaxis 
                 }

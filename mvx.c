@@ -18,9 +18,9 @@ typedef struct {
 } elementosMnemonicos;
 
 typedef struct{
-    char tipoArchivo[5];
+    __int32 tipoArchivo;
     __int32 numVersion;
-     char GUID[33];
+    __int128_t GUID;
     __int32 fechaCreacion;
     __int32 horaCreacion;
     BYTE tipo;
@@ -96,8 +96,8 @@ void scmp(__int32 *a, __int32 *b){
     __int32 pos1=*a;
     __int32 pos2=*b;
     __int8 resta=0;
-    while(Memoria[pos1]!='\0' && Memoria[pos2]!='\0' && resta==0){        //si no tenemos en cuenta el primer caracter ANDA BIEN. probar con memoria[pos1+1] && memoria[pos2+1] en la condicion
-        //printf("Restare %c - %c \n", Memoria[pos1], Memoria[pos2]);
+    while(Memoria[pos1]!=0 && Memoria[pos2]!=0 && resta==0){        //si no tenemos en cuenta el primer caracter ANDA BIEN. probar con memoria[pos1+1] && memoria[pos2+1] en la condicion
+        printf("Restare %c - %c \n", Memoria[pos1], Memoria[pos2]);
         resta=Memoria[pos1]-Memoria[pos2];
         pos1++;
         pos2++;
@@ -105,7 +105,7 @@ void scmp(__int32 *a, __int32 *b){
 
     if (resta<0){
             //printf("a<b \n");
-            Registros[8].ValorRegistro== 0x80000000;
+            Registros[8].ValorRegistro= 0x80000000;
              }
     else if (resta>0){
             Registros[8].ValorRegistro=0x0;
@@ -303,7 +303,7 @@ void sys(__int32 *a){
                 printf("\n");
             } 
         }
-    } else if (*a=='F'){         //sys f
+    } else if (*a==0XF){         //sys f
         if (banderas[0]) {   //si está -b
             
             if (banderas[1])
@@ -420,7 +420,7 @@ void sys(__int32 *a){
                 Disk = fopen(aux->nombreDisco,"wb+");    //w+ crea un archivo vacio para leer y escribir
                 printf("Creando archivo default!! \n");
                 sectorDisco sec;
-                strcpy(sec.tipoArchivo,"VDD0"); //0x56444430 es VDD0 en hexa. comprobadísimo
+                sec.tipoArchivo = 0x56444430; // es VDD0 en hexa. comprobadísimo
                 sec.numVersion=0x1;
                 strcpy(sec.GUID,"7ee914b137774e84b31387ee9bed04a2");  //randomizar despues
                 sec.fechaCreacion=0X1348A6D;
@@ -444,7 +444,8 @@ void sys(__int32 *a){
                 __int8 CH = (cx >> 8);          //num cilindro
                 __int8 CL = (cx & 0xFF);        //num cabeza
                 __int8 DH = ((edx & 0xFFFF) >> 8);          //sector
-                fread (&sec,sizeof(sectorDisco),1,Disk);
+                
+                //fread (&sec,sizeof(sectorDisco),1,Disk);
                 printf("Valores disco \n Tipo archivo: %s \n GUID: %s \n Cantidad de cilindros: %d \n Cantidad de cabezas: %d \n Cantidad de sectores: %d \n Tamanio de sector: %d \n \n", sec.tipoArchivo,sec.GUID,sec.cantCilindros,sec.cantCabezas,sec.cantSectores,sec.tamSector);
 
 
@@ -713,7 +714,7 @@ int32_t GetParteBaja(int i){
 void push(__int32 *a){
     int SPL = Registros[6].ValorRegistro & 0xFFFF; //Tope de la pila
     if (SPL == 0) // Stack Overflow.
-       // Errores[3] = 1; hay que fijarse que error es
+       Errores[3] = 1; 
     else{
         Registros[6].ValorRegistro-=1;
         //SetParteBaja(6, SPL - 1); Siempre guarda en la parte de arriba de la pila y decrementa el SPL.
@@ -725,7 +726,7 @@ void push(__int32 *a){
 void pop(__int32 *a){
     int SPL = Registros[6].ValorRegistro & 0XFFFF; //GetParteBaja(6);
     if(SPL > Registros[1].ValorRegistro >> 16)// Direccion SS + SPL
-       // detiene_ejecucion=3; //Stack Underflow Este es otro error 
+       Errores[4] = 1;// detiene_ejecucion=3; //Stack Underflow Este es otro error 
     else{
         (*a) = Memoria[Registros[1].ValorRegistro & 0XFFFF + SPL];
         Registros[6].ValorRegistro+=1; //SetParteBaja(6, SPL + 1);
@@ -733,16 +734,16 @@ void pop(__int32 *a){
 }
 
 void call(__int32 *a){
-    int IP = Registros[5].ValorRegistro; //El IP ya fue incrementado antes en ejecución.
+    __int32 IP = Registros[5].ValorRegistro; //El IP ya fue incrementado antes en ejecución.
     push(&IP);
-    if(detiene_ejecucion != 2) //El IP se pusheó bien
+    if(!Errores[3]) //El IP se pusheó bien
         Registros[5].ValorRegistro = *a; //JMP operando
 }
 
 void ret(){
-    int IP;
+    __int32 IP;
     pop(&IP); //Toma la dirección de la pila.
-    if(detiene_ejecucion!=3) //Si no hubo Underflow luego del pop.
+    if(!Errores[4]) //Si no hubo Underflow luego del pop.
         Registros[5].ValorRegistro=IP; //Le asigna la dirección al registro IP.
 }
 
@@ -772,11 +773,6 @@ int main(int arg,char *args[]){
         cargaMnemonicos();
         InicializaRegistros();
         
-        /*
-        for (int p=0;p<4;p++){
-            printf("Registro %d: %X \n", p,Registros[p].ValorRegistro);
-        }
-        */
         FILE *archDiscos;
         TListaDiscos discos=NULL;
         archDiscos = fopen(args[2],"rwb");
@@ -830,6 +826,7 @@ int main(int arg,char *args[]){
         else if(Errores[1])   
             printf("Memoria insuficiente");
     }    
+
    
     return 0;
 }
@@ -840,7 +837,7 @@ void InicializaRegistros(){
     strcpy(Registros[2].nombre,"ES "); Registros[2].ValorRegistro = (Header[1] + Header[4]) | (Header[3]<<16);
     strcpy(Registros[3].nombre,"CS "); Registros[3].ValorRegistro = Header[4]<<16;
     strcpy(Registros[4].nombre,"HP "); Registros[4].ValorRegistro= 0x00020000;
-    strcpy(Registros[5].nombre,"IP "); Registros[5].ValorRegistro=0;
+    strcpy(Registros[5].nombre,"IP "); Registros[5].ValorRegistro= 0X00000000;
     strcpy(Registros[6].nombre,"SP "); Registros[6].ValorRegistro= 0x00010000 | (Registros[1].ValorRegistro>>16 && 0xFFFF); 
     strcpy(Registros[7].nombre,"BP "); Registros[7].ValorRegistro= 0x00010000;
     strcpy(Registros[8].nombre,"CC "); Registros[8].ValorRegistro=0;
@@ -958,7 +955,7 @@ void cargaMnemonicos()  //funcion que carga los mnemonicos con sus respectivos c
             //printf("La posicion de memoria es: %d y el valor es: %d",seg+valorRegistro+offset, seg+valorRegistro+offset);
             valorOp= seg+valorRegistro+offset;
         } else{
-            printf("Te pasaste de segmento!! \n");
+            Errores[2]=1;
         }
     }
     return valorOp; // si es inmediato lo devuelve igual
@@ -971,9 +968,10 @@ void leeInstruccion(){
     void (*fun[])(__int32 *, __int32 *) = {mov, add, sub,swap,mul,DIV,cmp,shl,shr,and,or,xor,slen,smov,scmp};
     void (*fun2[])(__int32 *) = {sys,jmp, jz,jp,JN,jnz,jnp,jnn,ldl,ldh,rnd,not,push,pop,call};
 
-    while (Registros[5].ValorRegistro>=0 && Registros[5].ValorRegistro<(Registros[0].ValorRegistro&0xFFFF)){
+    while (Registros[5].ValorRegistro >=0 && Registros[5].ValorRegistro<(Registros[0].ValorRegistro & 0xFFFF) && !(Errores[2] || Errores[3] || Errores[4])){
 
         instruccion = Memoria[Registros[5].ValorRegistro];
+        printf("%08X",instruccion);
         Registros[5].ValorRegistro++;
         
         mnemonico = leeMnemonico(instruccion,&cantidadOperandos);
@@ -1018,7 +1016,7 @@ void leeInstruccion(){
                 if(op1 != op2 && mnemonico != 0xC)
                     alamacenaRM(valorOp2,tipoOp2,op2);
             }
-            if(mnemonico != 0X0 && mnemonico != 0X3 && mnemonico !=0X6 ){ // cambia el valor de CC seguun el resultado que se calcule
+            if(mnemonico != 0X0 && mnemonico != 0X3 && mnemonico !=0X6 && mnemonico != 0XE && mnemonico != 0XD && mnemonico!= 0XC){ // cambia el valor de CC seguun el resultado que se calcule
                 cambiaCC(valorOp1);
             }
             
@@ -1039,15 +1037,19 @@ void leeInstruccion(){
                 stop();
             else if (mnemonico == mnemonicos[30].cod)
                 ret();
-            else
-                printf("Flaco sos nefasto, pusiste algo mal");
-            
+                  
         }
         if(breakpoint == 1 && mnemonico != mnemonicos[15].cod){
             
             sys(&sysB);
         }
-    }  
+    }
+    if(Errores[0]) 
+        printf("Segmentation Fault");
+    else if(Errores[1])   
+        printf("Stack Overflow");
+    else if(Errores[4])
+        printf("Stack Underflow");
 
 }
 
@@ -1137,6 +1139,13 @@ void alamacenaRM(__int32 valorOp, __int32 tipoOp, __int32 op){
       
     } else if(tipoOp == 2){ //de directo
         Memoria[op+(Registros[0].ValorRegistro&0xFFFF)] = valorOp;
+    } else if(tipoOp==3){ //indirecto
+        __int8 offset = op >> 4;                                   //offset
+        __int8 codReg = op & 0xF;                                 //numero de registro que viene de la traduccion
+        __int32 codSeg = Registros[codReg].ValorRegistro >> 16;        // codigo del segmento al que referenciaré
+        __int32 seg = Registros[codSeg].ValorRegistro & 0xFFFF;        //donde comienza el segmento en memoria
+        Memoria[(Registros[codReg].ValorRegistro & 0XFFFF) + seg + offset] =  valorOp;
+
     }
 }
 
@@ -1147,7 +1156,7 @@ void MuestraCodigo(){
     //MUESTRA DE REGISTROS
     printf("\nRegistros:\n");
     for(int j = 0; j < 16; j++){
-        printf("%3s = %12d |", Registros[j].nombre, Registros[j].ValorRegistro & 0xFFFF);
+        printf("%3s = %08X |", Registros[j].nombre, Registros[j].ValorRegistro);
         if (j % 4 == 3)
             printf("\n");
     }
@@ -1164,7 +1173,7 @@ void Dissasembler(int pos_memoria){
 
     if((inst & 0xFF000000) == 0xFF000000){ //Si es de 0 operandos
         nroMnemonico = (inst>>20)&0x00F;
-        printf("%s\t\t",mnemonicos[nroMnemonico + 26].mnemonico); //Mnemónico
+        printf("%s\t\t",mnemonicos[nroMnemonico + 30].mnemonico); //Mnemónico
     }
     else if((inst & 0xF0000000) == 0xF0000000){ //Si es de un operando
         nroMnemonico= ((inst&0x0F000000)>>24);
