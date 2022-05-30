@@ -682,6 +682,32 @@ void sys(__int32 *a){
 void stop(){
     Registros[5].ValorRegistro = Registros[0].ValorRegistro;
 }
+
+/*
+
+void SetParteAlta(int i, int32_t valor){
+    valor = (valor << 16);
+    Registros[i].ValorRegistro = valor + GetParteBaja(i);
+}
+
+void SetParteBaja(int i, int32_t valor){
+    Registros[i].ValorRegistro = (GetParteAlta(i) << 16) + (valor & 0x0000FFFF);
+}
+
+int32_t GetParteAlta(int i){
+    int32_t alta = Registros[i].ValorRegistro;
+    alta = (alta >> 16);
+    return alta;
+}
+
+int32_t GetParteBaja(int i){
+    int32_t baja = Registros[i].ValorRegistro;
+    baja = (baja << 16);
+    baja = (baja >> 16);
+    return baja;
+}
+*/
+
 //-------------------------PILA-------------------------
 /*
 void push(__int32 *a){
