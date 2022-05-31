@@ -40,7 +40,7 @@ int rotuloInmediato(ListaRotulos LR, char operando[]);
 __int32 tipoOperando(char op[],ListaRotulos LR);
 __int32 transformaOperando(char operando[],int tipoOperando,TRegistros Registros[],ListaRotulos LR);
 __int32 DevuelveInmediato(char operando[],ListaRotulos LR);
-__int32 DevuelveDirecto(char operando[]);
+__int32 DevuelveDirecto(char operando[],ListaRotulos LR);
 __int32 DevuelveRegistro(char operando[],TRegistros Registros[]);
 __int32 esRotulo(char ope[],ListaRotulos LR);
 __int32 buscaRegistro(char operando[],TRegistros Registros[]);
@@ -421,8 +421,9 @@ void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemon
 
             tipoOpe1 = tipoOperando(op1String,LR);
             tipoOpe2 = tipoOperando(op2String,LR);
-
+    //printf("tipo operando 1: %d -- tipo operando 2: %d\n",tipoOpe1,tipoOpe2);
             op1 =transformaOperando(op1String,tipoOpe1,Registros,LR);
+            //printf("operando 1: %X\n",op1);
             if (tipoOpe1==0){
                 if(op1>0XFFF){
                     op1 = op1 & 0XFFF;
@@ -506,6 +507,7 @@ void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemon
     }
 
 }
+
 __int32 DevuelveInmediato(char operando[], ListaRotulos LR){
         char *ope;
         hexa_u_octal=0;
@@ -518,7 +520,6 @@ __int32 DevuelveInmediato(char operando[], ListaRotulos LR){
                 switch(operando[0]){ //Con esto vamos a devolver el valor en decimal.
                     case '#':
                         ope = &operando[1];
-
                         return atoi(ope);
                         break;
                     case 39: //Si es una letra.
@@ -556,32 +557,36 @@ __int32 buscaRegistro(char operando[],TRegistros Registros[]){
         return -1;
 }
 
-__int32 DevuelveDirecto(char operando[]){
+__int32 DevuelveDirecto(char operando[],ListaRotulos LR){
     char *ope;
     ope = &operando[1];
     ope[strlen(ope)-1]='\0';
     if(ope[0] >= '0' && ope[0] <= '9'){
          return (atoi(ope));
     }else{
-        switch(ope[0]){ //Con esto vamos a devolver el valor en decimal.
-            case '#':
-                ope = &ope[1];
-                return atoi(ope);
-                break;
-            case 39: //Si es una letra.
-                return (int) ope[1];
-                break;
-            case '@':
-                ope = &ope[1];
-                return strtoul(ope, NULL, 8);
-                break;
-            case '%':
-                ope = &ope[1];
-                return strtoul(ope, NULL, 16);
-                break;
-            default:
-                return -1;
-        }
+        if ((ope[0]>='A' && ope[0]<='Z') || (ope[0]>='a' && ope[0]<='z')){
+            return DevuelveInmediato(ope,LR);
+        }else
+            switch(ope[0]){ //Con esto vamos a devolver el valor en decimal.
+                case '#':
+                    ope = &ope[1];
+                    return atoi(ope);
+                    break;
+                case 39: //Si es una letra.
+                    return (int) ope[1];
+                    break;
+                case '@':
+                    ope = &ope[1];
+                    return strtoul(ope, NULL, 8);
+                    break;
+                case '%':
+                    ope = &ope[1];
+                    return strtoul(ope, NULL, 16);
+                    break;
+                default:
+                    return -1;
+                    break;
+            }
     }
 
 }
@@ -766,7 +771,7 @@ __int32 transformaOperando(char operando[],int tipoOperando,TRegistros Registros
     } else if(tipoOperando==0){
         return DevuelveInmediato(operando,LR);
     } else if(tipoOperando==2){
-        return DevuelveDirecto(operando); 
+        return DevuelveDirecto(operando,LR); 
     } else if (tipoOperando==1){
         return DevuelveRegistro(operando,Registros); 
      } else
@@ -782,8 +787,6 @@ int rotuloInmediato(ListaRotulos LR, char operando[]){
     else
         return 0;
 }
-
-  
 
 __int32 DevuelveConstantValue(char operando[]){  
         char *ope, *simbol;
