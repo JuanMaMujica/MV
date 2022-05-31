@@ -45,10 +45,10 @@ __int32 Memoria[cantidadMR]={0};
 int banderas[5] = {0};
 int breakpoint = 0;
 TListaDiscos LD=NULL;
-
-//--------------------------------------Prototipos---------------------------------------------------
 __int32 Header[6]={0};
 __int8 Errores[5]={0}; //Puede haber 5 errores en la ejecucion
+
+//--------------------------------------Prototipos---------------------------------------------------
 void InicializaRegistros();
 void cargaMnemonicos();
 void leeInstruccion();
@@ -97,7 +97,7 @@ void scmp(__int32 *a, __int32 *b){
     __int32 pos2=*b;
     __int8 resta=0;
     while(Memoria[pos1]!=0 && Memoria[pos2]!=0 && resta==0){        //si no tenemos en cuenta el primer caracter ANDA BIEN. probar con memoria[pos1+1] && memoria[pos2+1] en la condicion
-        printf("Restare %c - %c \n", Memoria[pos1], Memoria[pos2]);
+        //printf("Restare %c - %c \n", Memoria[pos1], Memoria[pos2]);
         resta=Memoria[pos1]-Memoria[pos2];
         pos1++;
         pos2++;
@@ -250,7 +250,7 @@ void sys(__int32 *a){
     //printf("Entrando en el sys... valor de a: %d \n Valor del DS: %d. Valor del EDX:" , *a, ds, edx);
 
     if (*a == 0X1){
-        printf("Sys 1 \n");
+        //printf("Sys 1 \n");
         if (ax & 0x100){     //bit vale 1
             if (!(ax & 0x800)){                             // muestra prompt. si vale 1, no entra.
                 printf("[%d]:\t", edx+ds+j);
@@ -279,7 +279,7 @@ void sys(__int32 *a){
             }
         }
     } else if (*a==0X2){           //sys 2
-         printf("Sys 2 \n");
+         //printf("Sys 2 \n");
         for (i=0;i<cx;i++){
             if (!(ax & 0x800)){
                 printf("[%d]:\t", edx+ds+i);     
@@ -352,7 +352,7 @@ void sys(__int32 *a){
     }  else if (*a==0X3){       //string read
         cx= cx & 0xFFFF;
         ax= ax & 0xFFFF;
-        printf("Sys 3 \n");
+        //printf("Sys 3 \n");
         char aux[50];
         if (!(ax & 0x800)){                            
             printf("[%d]:\t", edx+ds);
@@ -369,7 +369,7 @@ void sys(__int32 *a){
         Memoria[edx+ds+i]='\0';
      } else if (*a==0x4){        //string write
          ax= ax & 0xFFFF;
-         printf("Sys 4 \n");
+         //printf("Sys 4 \n");
         i=0;
         if ((!(ax & 0x100))){    //printeo con endline
             while (Memoria[edx+ds+i]!='\0'){  
@@ -772,7 +772,8 @@ int main(int arg,char *args[]){
     fread(Memoria,sizeof(__int32),Header[4],archI);
 
     //Verifica Si la primer celda tiene MV-2 y la ultima V.22 --Error1 a detectar en ejecucion 
-    if(!(Header[0] == 0x4D562D31 && Header[5] == 0x562E3232)){
+    if(!(Header[0] == 0x4D562D32 && Header[5] == 0x562E3232)){
+        printf("%X \n %X", Header[0], Header[5]);
          Errores[0] = 1;       
     }
     else if(!((Header[1]+Header[2]+Header[3]) <= (cantidadMR - Header[4]))){
@@ -1190,113 +1191,114 @@ void MuestraCodigo(){
 
 void Dissasembler(int pos_memoria){
     __int32 inst=Memoria[pos_memoria],op,sectorReg,nroMnemonico;
+    if(inst>>16 != 0X0){
+        if((pos_memoria == Registros[5].ValorRegistro) && Registros[5].ValorRegistro != 0)
+            printf("\n>");
+        else
+            printf("\n ");
+        printf("[%04d]: %02X %02X %02X %02X  %3d: ",pos_memoria,(inst>>24)&0x000000FF,(inst>>16)&0x000000FF,(inst>>8)&0x000000FF,(inst&0x000000FF),pos_memoria+1);
 
-    if((pos_memoria == Registros[5].ValorRegistro) && Registros[5].ValorRegistro != 0)
-        printf("\n>");
-    else
-        printf("\n ");
-    printf("[%04d]: %02X %02X %02X %02X  %3d: ",pos_memoria,(inst>>24)&0x000000FF,(inst>>16)&0x000000FF,(inst>>8)&0x000000FF,(inst&0x000000FF),pos_memoria+1);
-
-    if((inst & 0xFF000000) == 0xFF000000){ //Si es de 0 operandos
-        nroMnemonico = (inst>>20)&0x00F;
-        printf("%s\t\t",mnemonicos[nroMnemonico + 30].mnemonico); //Mnemónico
-    }
-    else if((inst & 0xF0000000) == 0xF0000000){ //Si es de un operando
-        nroMnemonico= ((inst&0x0F000000)>>24);
-        printf("%s\t\t",mnemonicos[nroMnemonico + 15].mnemonico); //Mnemónico
-        if((inst & 0x00C00000)==0x00800000){ //Directo
-            printf("[%d]",inst&0x0000FFFF);
+        if((inst & 0xFF000000) == 0xFF000000){ //Si es de 0 operandos
+            nroMnemonico = (inst>>20)&0x00F;
+            printf("%s\t\t",mnemonicos[nroMnemonico + 30].mnemonico); //Mnemónico
         }
-        else if((inst & 0x00C00000)==0x00400000){ //De Registro
-            op = inst & 0XFFFF;
-            if((op & 0XF) < 10 ){
-                printf("%s", Registros[op & 0XF].nombre);
-            } else {
-                sectorReg = (op>>4) & 0X3;
-                switch(sectorReg){
-                    case 0:
-                        printf("%s",Registros[op & 0XF].nombre);
-                        break;
-                    case 1:
-                        printf("%XL",op & 0XF);
-                        break;
-                    case 2:
-                        printf("%XH",op & 0XF);
-                        break;
-                    case 3:
-                        printf("%XX",op & 0XF);
-                        break;
+        else if((inst & 0xF0000000) == 0xF0000000){ //Si es de un operando
+            nroMnemonico= ((inst&0x0F000000)>>24);
+            printf("%s\t\t",mnemonicos[nroMnemonico + 15].mnemonico); //Mnemónico
+            if((inst & 0x00C00000)==0x00800000){ //Directo
+                printf("[%d]",inst&0x0000FFFF);
+            }
+            else if((inst & 0x00C00000)==0x00400000){ //De Registro
+                op = inst & 0XFFFF;
+                if((op & 0XF) < 10 ){
+                    printf("%s", Registros[op & 0XF].nombre);
+                } else {
+                    sectorReg = (op>>4) & 0X3;
+                    switch(sectorReg){
+                        case 0:
+                            printf("%s",Registros[op & 0XF].nombre);
+                            break;
+                        case 1:
+                            printf("%XL",op & 0XF);
+                            break;
+                        case 2:
+                            printf("%XH",op & 0XF);
+                            break;
+                        case 3:
+                            printf("%XX",op & 0XF);
+                            break;
+                    }
                 }
             }
-        }
-        else { //Supongo inmediato  //else PONER INDIRECTOS
-            printf("%4d",inst&0x0000FFFF);
-        }
-    }
-    else{ //Si es de dos operandos
-        nroMnemonico= ((inst&0xF0000000)>>28) & 0x0000000F; //Mnemónico
-        printf("%s\t\t",mnemonicos[nroMnemonico].mnemonico);
-
-        if((inst & 0x0C000000)==0x08000000) //Si operando 1 es directo
-            printf("[%d], ",((inst&0x00FFF000)>>12));
-        else if((inst & 0x0C000000)==0x04000000){ //Si operando 1 es de registro
-            op = (inst>>12) & 0XFFF;
-            if((op & 0XF) < 10 ){
-                printf("%s", Registros[op & 0XF].nombre);
-            } else {
-                sectorReg = (op>>4) & 0X3;
-                switch(sectorReg){
-                    case 0:
-                        printf("%s, ",Registros[op & 0XF].nombre);
-                        break;
-                    case 1:
-                        printf("%XL, ",op & 0XF);
-                        break;
-                    case 2:
-                        printf("%XH, ",op & 0XF);
-                        break;
-                    case 3:
-                        printf("%XX, ",op & 0XF);
-                        break;
-                }
+            else { //Supongo inmediato  //else PONER INDIRECTOS
+                printf("%4d",inst&0x0000FFFF);
             }
         }
-        else { // Si operando 1 es inmediato  //else PONER INDIRECTOS
-            op=(inst&0x00FFF000)>>12;
-            op=op<<20;
-            op=op>>20;
-            printf("%4d, ",op);
-        }
-        if((inst & 0x03000000)==0x02000000) //Si operando 2 es directo
-            printf("[%d]",(inst&0x00000FFF));
+        else{ //Si es de dos operandos
+            nroMnemonico= ((inst&0xF0000000)>>28) & 0x0000000F; //Mnemónico
+            printf("%s\t\t",mnemonicos[nroMnemonico].mnemonico);
 
-        else if((inst & 0x03000000)==0x01000000){ //Si operando 2 es de registro
-            op = inst & 0XFFF;
-            if((op & 0XF) < 10 ){
-                printf("%s", Registros[op & 0XF].nombre);
-            } else {
-                sectorReg = (op>>4) & 0X3;
-                switch(sectorReg){
-                    case 0:
-                        printf("%s",Registros[op & 0XF].nombre);
-                        break;
-                    case 1:
-                        printf("%XL",op & 0XF);
-                        break;
-                    case 2:
-                        printf("%XH",op & 0XF);
-                        break;
-                    case 3:
-                        printf("%XX",op & 0XF);
-                        break;
+            if((inst & 0x0C000000)==0x08000000) //Si operando 1 es directo
+                printf("[%d], ",((inst&0x00FFF000)>>12));
+            else if((inst & 0x0C000000)==0x04000000){ //Si operando 1 es de registro
+                op = (inst>>12) & 0XFFF;
+                if((op & 0XF) < 10 ){
+                    printf("%s", Registros[op & 0XF].nombre);
+                } else {
+                    sectorReg = (op>>4) & 0X3;
+                    switch(sectorReg){
+                        case 0:
+                            printf("%s, ",Registros[op & 0XF].nombre);
+                            break;
+                        case 1:
+                            printf("%XL, ",op & 0XF);
+                            break;
+                        case 2:
+                            printf("%XH, ",op & 0XF);
+                            break;
+                        case 3:
+                            printf("%XX, ",op & 0XF);
+                            break;
+                    }
                 }
             }
+            else { // Si operando 1 es inmediato  //else PONER INDIRECTOS
+                op=(inst&0x00FFF000)>>12;
+                op=op<<20;
+                op=op>>20;
+                printf("%4d, ",op);
+            }
+            if((inst & 0x03000000)==0x02000000) //Si operando 2 es directo
+                printf("[%d]",(inst&0x00000FFF));
+
+            else if((inst & 0x03000000)==0x01000000){ //Si operando 2 es de registro
+                op = inst & 0XFFF;
+                if((op & 0XF) < 10 ){
+                    printf("%s", Registros[op & 0XF].nombre);
+                } else {
+                    sectorReg = (op>>4) & 0X3;
+                    switch(sectorReg){
+                        case 0:
+                            printf("%s",Registros[op & 0XF].nombre);
+                            break;
+                        case 1:
+                            printf("%XL",op & 0XF);
+                            break;
+                        case 2:
+                            printf("%XH",op & 0XF);
+                            break;
+                        case 3:
+                            printf("%XX",op & 0XF);
+                            break;
+                    }
+                }
+            }
+            else { // Si operando 2 es inmediato
+                op=(inst&0x00000FFF);
+                op=op<<20;
+                op=op>>20;
+                printf("%d",op);
+            } //else PONER INDIRECTOS
         }
-        else { // Si operando 2 es inmediato
-            op=(inst&0x00000FFF);
-            op=op<<20;
-            op=op>>20;
-            printf("%d",op);
-        } //else PONER INDIRECTOS
     }
 }

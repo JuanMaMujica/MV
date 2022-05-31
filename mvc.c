@@ -11,7 +11,7 @@ typedef struct TRegistros{
 
 
 typedef struct nodoS{
-    char nombre[20],valor[20];
+    char nombre[10],valor[200];
     struct nodoS *sig;
 } nodoS;
 
@@ -29,6 +29,8 @@ typedef struct nodo {
 }   nodo;
 
 typedef struct nodo* ListaRotulos;
+
+//----------------------------------------VARIABLES GLOBALES----------------------------------------------
 int hexa_u_octal;
  __int32 Memoria[8192]={0};
 int error = 0; //cuando hay un error se pone en 1
@@ -60,7 +62,7 @@ int main(int arg, char *args[])
 {   
    
 
-    int i=0,j=6,tamanoCS=0 ,tamanoDS=1024, tamanoES=1024, tamanoSS=1024;    //checkear cuando hay que sumar el numero de linea y cuando no
+    int k,i=0,j=6,tamanoCS=0 ,tamanoDS=1024, tamanoES=1024, tamanoSS=1024;    //checkear cuando hay que sumar el numero de linea y cuando no
     __int32 header[6];
     elementosMnemonicos mnemonicos[32];
     ListaRotulos LR = NULL;
@@ -90,36 +92,36 @@ int main(int arg, char *args[])
     if(archI!=NULL)     //si el archivo de entrada no existe o se genera algun error no hace nada
     {
         buscaRotulo(&LR,archI,&tamanoCS,&tamanoDS,&tamanoES,&tamanoSS,&LS);
-
-        while(LS!=NULL){      //inserto constantes string despues del CS
-            int i=0;
-            while (i<=strlen(LS->valor)){
-                if (i==0){
-                int direccion=tamanoCS+1;
-                ListaRotulos aux;
-                aux= (ListaRotulos) malloc (sizeof(nodo));
-                aux->linea=direccion;
-                strcpy(aux->rotulo,LS->nombre);
-                aux->sig=LR;
-                LR=aux;
-            }
-                Memoria[++tamanoCS]=LS->valor[i];
-                i++;
+        while(LS!=NULL){      //inserto constantes string despues del CS (Lo chekie anda bien)
+            k=0;
+            int len=strlen(LS->valor);
+            while (k<=len+1){
+                if(k==0){
+                    int direccion=tamanoCS;
+                    ListaRotulos aux;
+                    aux= (ListaRotulos) malloc (sizeof(nodo));
+                    aux->linea=direccion;
+                    strcpy(aux->rotulo,LS->nombre);
+                    aux->sig=LR;
+                    LR=aux;
+                }
+                Memoria[tamanoCS+6]=LS->valor[k];
+                tamanoCS++;
+                k++;
             }
             LS=LS->sig;
         }
        // Registros[0].ValorRegistro=contadorDS;
         
-        printf("El tamanio del CS es de: %d \n", tamanoCS);
+        //printf("El tamanio del CS es de: %d \n", tamanoCS);
         InicializaHeader(header,tamanoCS,tamanoDS,tamanoES,tamanoSS);
         fseek(archI,0,SEEK_SET);
 
             for (int i=0; i < 6; i++){
+               // printf("%X", header[i]);
                 Memoria[i] = header[i];
             }
-      
-      
-        
+
 
 
         while (!feof(archI)){   
@@ -140,6 +142,10 @@ int main(int arg, char *args[])
         freeline(parsed);
       
         if(error==0){
+            int i=0;
+            while(Memoria[i]<6){
+                printf("%X\n", Memoria[i]);
+            }
             fwrite(Memoria,sizeof(__int32),j,archO);   
         }       
     }
@@ -151,7 +157,7 @@ int main(int arg, char *args[])
 }
 
 void InicializaHeader(__int32 Header[],int tamanoCS ,int tamanoDS, int tamanoES, int tamanoSS){
-    Header[0] = 0x4D562D31;
+    Header[0] = 0x4D562D32;
     Header[1] = tamanoDS; //Corresponde al DS
     Header[2] = tamanoSS; 
     Header[3] = tamanoES; 
@@ -160,16 +166,16 @@ void InicializaHeader(__int32 Header[],int tamanoCS ,int tamanoDS, int tamanoES,
 }
 
 void InicializaRegistros(TRegistros Registros[]){
-    strcpy(Registros[0].nombre,"DS "); Registros[0].ValorRegistro=0;
-    strcpy(Registros[1].nombre,"SS "); Registros[1].ValorRegistro=0;
-    strcpy(Registros[2].nombre,"ES "); Registros[2].ValorRegistro=0;
-    strcpy(Registros[3].nombre,"CS "); Registros[3].ValorRegistro=0;
-    strcpy(Registros[4].nombre,"HP "); Registros[4].ValorRegistro=0;
-    strcpy(Registros[5].nombre,"IP "); Registros[5].ValorRegistro=0;
-    strcpy(Registros[6].nombre,"SP "); Registros[6].ValorRegistro=0;
-    strcpy(Registros[7].nombre,"BP "); Registros[7].ValorRegistro=0;
-    strcpy(Registros[8].nombre,"CC "); Registros[8].ValorRegistro=0;
-    strcpy(Registros[9].nombre,"AC "); Registros[9].ValorRegistro=0;
+    strcpy(Registros[0].nombre,"DS"); Registros[0].ValorRegistro=0;
+    strcpy(Registros[1].nombre,"SS"); Registros[1].ValorRegistro=0;
+    strcpy(Registros[2].nombre,"ES"); Registros[2].ValorRegistro=0;
+    strcpy(Registros[3].nombre,"CS"); Registros[3].ValorRegistro=0;
+    strcpy(Registros[4].nombre,"HP"); Registros[4].ValorRegistro=0;
+    strcpy(Registros[5].nombre,"IP"); Registros[5].ValorRegistro=0;
+    strcpy(Registros[6].nombre,"SP"); Registros[6].ValorRegistro=0;
+    strcpy(Registros[7].nombre,"BP"); Registros[7].ValorRegistro=0;
+    strcpy(Registros[8].nombre,"CC"); Registros[8].ValorRegistro=0;
+    strcpy(Registros[9].nombre,"AC"); Registros[9].ValorRegistro=0;
     strcpy(Registros[10].nombre,"EAX"); Registros[10].ValorRegistro=0;
     strcpy(Registros[11].nombre,"EBX"); Registros[11].ValorRegistro=0;
     strcpy(Registros[12].nombre,"ECX"); Registros[12].ValorRegistro=0;
@@ -292,52 +298,55 @@ void strToUpper(char palabra[]){      //Pasa a mayusculas el string que le manda
 void buscaRotulo(ListaRotulos *LR, FILE *archA, int *tamanoCS, int *tamanoDS, int *tamanoES, int *tamanoSS, ListaString *LS){
     char instruccionAss[256];
     char **parsed;
-    int valueConst;
     int i=0;
+    char auxrotulo[20];
 
     while(!feof(archA)){
         fgets(instruccionAss,256,archA);  //lee la linea correspondiente del archivo asm
         parsed = parseline(instruccionAss);
-        if(parsed[0]!=NULL){
-            char auxrotulo[20];
+        if(parsed[0]!=NULL && parsed[1]!=NULL){
             strcpy(auxrotulo,parsed[0]);
+            strToUpper(auxrotulo);
             if (!duplicado(*LR,auxrotulo) && !duplicadoStr(*LS,auxrotulo))
-                ingresarRotulo(LR,parsed[0],i);
+                ingresarRotulo(LR,auxrotulo,i);
             else{
                 printf("ERROR: Rotulo %s duplicado. Traduccion detenida\n");
                 exit(0);
             }
         }
-        if(!(parsed[0]==NULL && parsed[1]==NULL && parsed[2]==NULL && parsed[3]==NULL))
+        if(parsed[1]!=NULL)  //!(parsed[0]==NULL && parsed[1]==NULL && parsed[2]==NULL && parsed[3]==NULL) 
             i++;
-        
         if (parsed[5]!=NULL){
-        strToUpper(parsed[5]);
-        if(strcmp(parsed[5],"DATA")==0)
-            *tamanoDS = atoi( parsed[6]);
-        if(strcmp(parsed[5],"EXTRA")==0)
-            *tamanoES = atoi( parsed[6]);
-        if(strcmp(parsed[5],"STACK")==0)
-            *tamanoSS = atoi( parsed[6]);
-
-        printf("\n Tamaños asignados");
-
+            strToUpper(parsed[5]);
+            if(strcmp(parsed[5],"DATA")==0)
+                *tamanoDS = atoi(parsed[6]);
+            if(strcmp(parsed[5],"EXTRA")==0)
+                *tamanoES = atoi(parsed[6]);
+            if(strcmp(parsed[5],"STACK")==0)
+                *tamanoSS = atoi(parsed[6]);
         }
 
+        //printf("\n Tamaños asignados");
+
         if(parsed[7]!=NULL && parsed[8]!=NULL){
-            char aux[20];
+            char *auxV, auxA[200];   //Necesito un array de char para poder darle la direccion al puntero aux y sacar las comillas
             char auxnombre[20];
             strToUpper(parsed[7]);
-            strcpy (aux,parsed[8]);
+            strcpy (auxA,parsed[8]);
             strcpy (auxnombre,parsed[7]);
+            if(auxA[0]=='"'){
+                auxV = &auxA[1];
+                auxV[strlen(auxV)-1]='\0';    //Aca ya me queda el string sin comillas
+            } else 
+                strcpy(auxV,auxA);  //si no es un string se lo pasa tal cual esta
             if ((auxnombre[0]<'0' || auxnombre[0]>'9') && strlen(auxnombre)>=3 && strlen(auxnombre)<=10){    //verifico que el nombre del simbolo tenga mas de 3 y menos de 10 caracteres. y que el primer caracter no sea un digito
-                if (aux[1]!='\0' && (aux[0]<'0' || aux[0]>'9' || aux[0]!='@' || aux[0]!='%' || aux[0]!='#')){    //si el valor del simbolo es un string
+                if (auxV[1]!='\0' && (auxV[0]<'0' || auxV[0]>'9' || auxV[0]!='@' || auxV[0]!='%' || auxV[0]!='#')){    //si el valor del simbolo es un string
                     if (!duplicado(*LR,auxnombre) && !duplicadoStr(*LS,auxnombre)){
-                        strToUpper(parsed[8]);
+                        strToUpper(auxnombre);
                         ListaString aux;
                         aux= (ListaString) malloc (sizeof(nodoS));
-                        strcpy(aux->nombre,parsed[7]);
-                        strcpy(aux->valor,parsed[8]);
+                        strcpy(aux->nombre,auxnombre);
+                        strcpy(aux->valor,auxV);
                         aux->sig=*LS;      //crear lista string
                         *LS=aux;
                     } else{
@@ -364,9 +373,9 @@ void buscaRotulo(ListaRotulos *LR, FILE *archA, int *tamanoCS, int *tamanoDS, in
     *tamanoCS = i;
 }
 
-int duplicadoStr(ListaString LS, char nombreSimbolo[20]){
+int duplicadoStr(ListaString LS, char valorSimbolo[200]){
     ListaString aux = LS;
-    while (aux!=NULL && strcmp(nombreSimbolo,aux->nombre)!=0)
+    while (aux!=NULL && strcmp(valorSimbolo,aux->nombre)!=0)
         aux=aux->sig;
     
     return aux!=NULL;     //si no se cayó es xq hay duplicado
@@ -404,8 +413,8 @@ void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemon
         }
   
     mnemonico=recorreMnemonicos(mnemonicos,parsed[1]);
-    if(mnemonico!=0XFFFFFFFF && mnemonico!=0xFF1){ //si no hay error sigue con la ejecucion de la traduccion normal
-        if(mnemonico<=0XE){
+    if(mnemonico!=0XFFFFFFFF && mnemonico!=0xFF1 && mnemonico!=0XFF0){ //si no hay error sigue con la ejecucion de la traduccion normal
+        if(mnemonico<=0XE){ //Bloque de dos operandos
             char op1String[15], op2String[15];
             strcpy(op1String,parsed[2]);
             strcpy(op2String,parsed[3]);
@@ -449,8 +458,7 @@ void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemon
                     printf("[%04d]:\t%02X %02X %02X %02X\t\t%d: %s\t\t%s, %s\t\t%s\n",i,(*instruccionBin>>24) & 0XFF,(*instruccionBin>>16)&0XFF,(*instruccionBin>>8)&0XFF,*instruccionBin & 0XFF ,i+1,parsed[1],parsed[2],parsed[3],comentario);
     
 
-            //Bloque de dos operandos
-        }else if (mnemonico<=0XFB){
+        }else if (mnemonico<=0XFE){ //Bloque de 1 operando
             char op1String[8];
             strcpy(op1String,parsed[2]);
             tipoOpe1 = tipoOperando(op1String,LR);
@@ -478,26 +486,24 @@ void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemon
                     printf("[%04d]:\t%02X %02X %02X %02X\t\t%s: %s\t\t%s\t\t%s\n",i,(*instruccionBin>>24) & 0XFF,(*instruccionBin>>16)&0XFF,(*instruccionBin>>8)&0XFF,*instruccionBin & 0XFF ,parsed[0],parsed[1],parsed[2],comentario);
                 }else
                     printf("[%04d]:\t%02X %02X %02X %02X\t\t%d: %s\t\t%s\t\t%s\n",i,(*instruccionBin>>24) & 0XFF,(*instruccionBin>>16)&0XFF,(*instruccionBin>>8)&0XFF,*instruccionBin & 0XFF ,i+1,parsed[1],parsed[2],comentario);
-            //Bloque de 1 operando
+            
         }
 
-        }else {
-            if(mnemonico==0XFFFFFFFF){
-                *error=1;
-                *instruccionBin = mnemonico;
-                printf("La siguiente instruccion tiene un error de sintaxis: \n");
+    }else {
+        if(mnemonico==0XFFFFFFFF){
+            *error=1;
+            *instruccionBin = mnemonico;
+             printf("La siguiente instruccion tiene un error de sintaxis: \n");
+        }
+        else
+            *instruccionBin = (mnemonico<<20) & 0XFFF00000;
+            if(strcmp(imprimir,"-o")==0){
+                if (parsed[0]!=NULL)
+                    printf("[%04d]:\t%02X %02X %02X %02X\t\t%s: %s\t\t\t\t%s\n",i,(*instruccionBin>>24) & 0XFF,(*instruccionBin>>16)&0XFF,(*instruccionBin>>8)&0XFF,*instruccionBin & 0XFF, parsed[0],parsed[1],comentario);
+                else
+                    printf("[%04d]:\t%02X %02X %02X %02X\t\t%d: %s\t\t\t\t%s\n",i,(*instruccionBin>>24) & 0XFF,(*instruccionBin>>16)&0XFF,(*instruccionBin>>8)&0XFF,*instruccionBin & 0XFF, i+1,parsed[1],comentario);
             }
-            else
-                *instruccionBin = (mnemonico<<20) & 0XFFF00000;
-        
-        if(strcmp(imprimir,"-o")==0)
-            if (parsed[0]!=NULL)
-                printf("[%04d]:\t%02X %02X %02X %02X\t\t%s: %s\t\t\t\t%s\n",i,(*instruccionBin>>24) & 0XFF,(*instruccionBin>>16)&0XFF,(*instruccionBin>>8)&0XFF,*instruccionBin & 0XFF, parsed[0],parsed[1],comentario);
-            else
-                printf("[%04d]:\t%02X %02X %02X %02X\t\t%d: %s\t\t\t\t%s\n",i,(*instruccionBin>>24) & 0XFF,(*instruccionBin>>16)&0XFF,(*instruccionBin>>8)&0XFF,*instruccionBin & 0XFF, i+1,parsed[1],comentario);
     }
-     
-    
 
 }
 __int32 DevuelveInmediato(char operando[], ListaRotulos LR){
@@ -648,10 +654,10 @@ __int32 DevuelveIndirecto(char operando[],TRegistros Registros[], ListaRotulos L
 if (ope[0]=='A' || ope[0]=='B' || ope[0]=='C' || ope[0] == 'D' || ope[0] =='E'|| ope[0] =='F')
 {
     if (ope[0]=='A' && ope[1]=='C'){
-        strcpy(reg,"AC ");
+        strcpy(reg,"AC");
         doscaracteres=1;
     } else if(ope[0]=='B' && ope[1]=='P'){
-        strcpy(reg,"BP ");
+        strcpy(reg,"BP");
         doscaracteres=1;
     }
     else if (ope[0]=='E' && (ope[1]=='A' || ope[1]=='B' || ope[1]=='C' || ope[1] == 'D' || ope[1] =='E'|| ope[1] =='F')){
@@ -669,7 +675,7 @@ if (ope[0]=='A' || ope[0]=='B' || ope[0]=='C' || ope[0] == 'D' || ope[0] =='E'||
     
 } 
 
-printf("Reg: %s \n", reg);
+//printf("Reg: %s \n", reg);
 
 /* for (i=0;i<3;i++){
     if (ope[0]=='A')
@@ -768,6 +774,7 @@ __int32 transformaOperando(char operando[],int tipoOperando,TRegistros Registros
 }
 
 int rotuloInmediato(ListaRotulos LR, char operando[]){
+    strToUpper(operando);
     while (LR!=NULL && strcmp(operando,LR->rotulo)!=0)
         LR = LR->sig;
     if (LR!=NULL && strcmp(operando,LR->rotulo)==0)  //si lo encontré
