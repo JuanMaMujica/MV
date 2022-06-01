@@ -1,5 +1,5 @@
 \\STACK 50
-titulo equ  "--- TORRE DE HANOI ---"
+titulo equ  "___ TORRE DE HANOI ___"
 msg    equ  "Ingrese la cantidad de discos:"
 strA  equ "Torre A" 
 strB  equ "Torre B"

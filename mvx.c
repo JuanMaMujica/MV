@@ -242,6 +242,7 @@ void sys(__int32 *a){
     int i,j=0,x,y;
     __int16 cx=(Registros[12].ValorRegistro) & 0xFFFF;
     __int32 ds=Registros[0].ValorRegistro & 0xFFFF;
+    __int32 reg=(Registros[13].ValorRegistro)>>16 & 0XFFFF;
     __int32 edx=Registros[13].ValorRegistro & 0xFFFF;
     __int16 ax=(Registros[10].ValorRegistro) & 0xFFFF;
     char straux[30],car[4],num1[4],num2[4];
@@ -304,8 +305,9 @@ void sys(__int32 *a){
             } 
         }
     } else if (*a==0XF){         //sys f
+        
         if (banderas[0]) {   //si está -b
-            
+            printf("sys f\n");
             if (banderas[1])
                 system("cls");     
             if (banderas[2])    //disassembler 
@@ -368,25 +370,30 @@ void sys(__int32 *a){
         } 
         Memoria[edx+ds+i]='\0';
      } else if (*a==0x4){        //string write
-         ax= ax & 0xFFFF;
+         //ax= ax & 0xFFFF;
          //printf("Sys 4 \n");
         i=0;
-        if ((!(ax & 0x100))){    //printeo con endline
-            while (Memoria[edx+ds+i]!='\0'){  
-                if (!(ax & 0x800)){                            
-                      printf("[%d]:\t", edx+ds+i);
-                }  
-                printf("%c \n", Memoria[edx+ds+i]);
-                i++;
-            } 
-        } else{   //print sin endline
-            while (Memoria[edx+ds+i]!='\0'){   
-                if (!(ax & 0x800)){                            
-                      printf("[%d]:\t", edx+ds+i);
+        __int32 valor=Registros[reg].ValorRegistro & 0XFFFF + edx;
+        if(valor < ((Registros[reg].ValorRegistro & 0XFFFF) + (Registros[reg].ValorRegistro>>16 & 0XFFFF))){
+            if ((!(ax & 0x100))){    //printeo con endline
+                while (Memoria[valor+i]!='\0'){  
+                    if (!(ax & 0x800)){                            
+                        printf("[%d]:\t", valor+i);
+                    }  
+                    printf("%c \n", Memoria[valor+i]);
+                    i++;
                 } 
-                printf("%c", Memoria[edx+ds+i]);
-                i++;
+            } else{   //print sin endline
+                while (Memoria[valor+i]!='\0'){   
+                    if (!(ax & 0x800)){                            
+                        printf("[%d]:\t", valor+i);
+                    } 
+                    printf("%c", Memoria[valor+i]);
+                    i++;
+                }
             }
+        } else {
+            printf("Segmentation Fault");
         }
     }
      else if (*a==0x7){
@@ -784,7 +791,9 @@ int main(int arg,char *args[]){
         cargaMnemonicos();
         InicializaRegistros();
         
+        /*
         FILE *archDiscos;
+        
         TListaDiscos discos=NULL;
         archDiscos = fopen(args[2],"rwb");
         
@@ -807,10 +816,12 @@ int main(int arg,char *args[]){
             printf("Disco %s \n", aux->nombreDisco);
             aux=aux->sig;
         }
+    */
 
         if(archI!=NULL){    
-            if (arg>2){ //Si hay banderas, se fija cuáles están.
-                for (int i=3; i < arg; i++){
+            if (arg>1){ //Si hay banderas, se fija cuáles están.
+                for (int i=2; i < arg; i++){
+                    printf("%s",args[i]);
                     if (strcmp(args[i], "-b") == 0){
                         banderas[0] = 1;
                     }
@@ -1029,7 +1040,7 @@ void leeInstruccion(){
                 }
                 if(mnemonico != 0X0 && mnemonico != 0X3 && mnemonico !=0X6 && mnemonico != 0XE && mnemonico != 0XD && mnemonico!= 0XC){ // cambia el valor de CC seguun el resultado que se calcule
                     cambiaCC(valorOp1);
-            }
+                }
             }
             
             
@@ -1039,7 +1050,8 @@ void leeInstruccion(){
             op1 = instruccion & 0XFFFF; 
             valorOp1 = decodificaOperando(op1,tipoOp1);
             if (Errores[2]==0){
-                 (*fun2[instruccion>>24 & 0XF])(&valorOp1);
+                printf("haciendo funcion: %X, valor: %X\n", mnemonico, valorOp1);
+                 (*fun2[mnemonico & 0XF])(&valorOp1);
                  if (mnemonico==0XFA || mnemonico==0XFB){   // RND, NOT
                     alamacenaRM(valorOp1,tipoOp1,op1);
                  }
@@ -1229,8 +1241,17 @@ void Dissasembler(int pos_memoria){
                             break;
                     }
                 }
+            } else if((inst & 0x00C00000)==0x00C00000){ //Indirecto
+                __int32 reg = inst & 0XF;
+                __int8 offset = inst>>4 & 0XFF;
+                if(offset>0)
+                    printf("[%s+%d]",Registros[reg].nombre,offset);
+                else if(offset<0)
+                    printf("[%s-%d]",Registros[reg].nombre,offset);
+                else
+                    printf("[%s]",Registros[reg].nombre);
             }
-            else { //Supongo inmediato  //else PONER INDIRECTOS
+            else { //Supongo inmediato  
                 printf("%4d",inst&0x0000FFFF);
             }
         }
@@ -1261,8 +1282,18 @@ void Dissasembler(int pos_memoria){
                             break;
                     }
                 }
+            } else if((inst & 0x0C000000)==0x0C000000){ // operando 1 indirecto
+                __int32 reg = inst>>12 & 0XF;
+                __int8 offset = inst>>16 & 0XFF;
+                if(offset>0)
+                    printf("[%s+%d]",Registros[reg].nombre,offset);
+                else if(offset<0)
+                    printf("[%s-%d]",Registros[reg].nombre,offset);
+                else
+                    printf("[%s]",Registros[reg].nombre);        
             }
-            else { // Si operando 1 es inmediato  //else PONER INDIRECTOS
+            
+            else { // Si operando 1 es inmediato
                 op=(inst&0x00FFF000)>>12;
                 op=op<<20;
                 op=op>>20;
@@ -1292,6 +1323,15 @@ void Dissasembler(int pos_memoria){
                             break;
                     }
                 }
+            } else if((inst & 0x03000000)==0x03000000){ // operando 2 indirecto
+                __int32 reg = inst & 0XF;
+                __int8 offset = inst>>4 & 0XFF;
+                if(offset>0)
+                    printf("[%s+%d],",Registros[reg].nombre,offset);
+                else if(offset<0)
+                    printf("[%s-%d],",Registros[reg].nombre,offset);
+                else
+                    printf("[%s],",Registros[reg].nombre);        
             }
             else { // Si operando 2 es inmediato
                 op=(inst&0x00000FFF);

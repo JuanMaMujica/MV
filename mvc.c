@@ -314,7 +314,7 @@ void buscaRotulo(ListaRotulos *LR, FILE *archA, int *tamanoCS, int *tamanoDS, in
                 exit(0);
             }
         }
-        if(parsed[1]!=NULL)  //!(parsed[0]==NULL && parsed[1]==NULL && parsed[2]==NULL && parsed[3]==NULL) 
+        if(!(parsed[0]==NULL && parsed[1]==NULL && parsed[2]==NULL && parsed[3]==NULL))  // parsed[1]!=NULL
             i++;
         if (parsed[5]!=NULL){
             strToUpper(parsed[5]);
@@ -329,18 +329,30 @@ void buscaRotulo(ListaRotulos *LR, FILE *archA, int *tamanoCS, int *tamanoDS, in
         //printf("\n Tamaños asignados");
 
         if(parsed[7]!=NULL && parsed[8]!=NULL){
-            char *auxV, auxA[200];   //Necesito un array de char para poder darle la direccion al puntero aux y sacar las comillas
+            char auxV[200], auxA[200];   //Necesito un array de char para poder darle la direccion al puntero aux y sacar las comillas
             char auxnombre[20];
             strToUpper(parsed[7]);
             strcpy (auxA,parsed[8]);
             strcpy (auxnombre,parsed[7]);
+
+             printf("Nombre constante: %s valor: %s \n", parsed[7],parsed[8]);
             if(auxA[0]=='"'){
-                auxV = &auxA[1];
-                auxV[strlen(auxV)-1]='\0';    //Aca ya me queda el string sin comillas
-            } else 
+                int l=0;
+                while (auxA[l+1]!='"'){
+                    auxV[l]=auxA[l+1];
+                    l++;
+                }
+                auxV[l+1]='\0';
+              //  auxV = &auxA[1];
+              //  auxV[strlen(auxV)-1]='\0';    //Aca ya me queda el string sin comillas
+            } else {
+                //printf("paso a auxv. no soy estrin \n");
                 strcpy(auxV,auxA);  //si no es un string se lo pasa tal cual esta
+               // printf("AuxV: [%s] \t AuxNombre: %s \n", auxV, auxnombre);
+            }
             if ((auxnombre[0]<'0' || auxnombre[0]>'9') && strlen(auxnombre)>=3 && strlen(auxnombre)<=10){    //verifico que el nombre del simbolo tenga mas de 3 y menos de 10 caracteres. y que el primer caracter no sea un digito
-                if (auxV[1]!='\0' && (auxV[0]<'0' || auxV[0]>'9' || auxV[0]!='@' || auxV[0]!='%' || auxV[0]!='#')){    //si el valor del simbolo es un string
+                if (auxV[1]!='\0' && ((auxV[0]<'0' || auxV[0]>'9') && !(auxV[0]=='@' || auxV[0]=='%' || auxV[0]=='#' || auxV[0]=='-'))){    //si el valor del simbolo es un string
+                    printf("Soy estrin!! \n");
                     if (!duplicado(*LR,auxnombre) && !duplicadoStr(*LS,auxnombre)){
                         strToUpper(auxnombre);
                         ListaString aux;
@@ -354,8 +366,9 @@ void buscaRotulo(ListaRotulos *LR, FILE *archA, int *tamanoCS, int *tamanoDS, in
                         error=1;
                     }
                 } else{      //no es string
+                      //  printf("simbolo no estrin \n");
                     if (!duplicado(*LR,auxnombre) && !duplicadoStr(*LS,auxnombre)){
-                     // printf("Cargando simbolo no string %s \n", auxnombre);
+                      printf("Cargando simbolo no string %s \n", auxnombre);
                       ingresarRotulo(LR,parsed[7],DevuelveConstantValue(parsed[8]));   
                     }
                     else{
@@ -656,111 +669,106 @@ __int32 DevuelveIndirecto(char operando[],TRegistros Registros[], ListaRotulos L
      int doscaracteres=0;
 
 
-if (ope[0]=='A' || ope[0]=='B' || ope[0]=='C' || ope[0] == 'D' || ope[0] =='E'|| ope[0] =='F')
-{
-    if (ope[0]=='A' && ope[1]=='C'){
-        strcpy(reg,"AC");
-        doscaracteres=1;
-    } else if(ope[0]=='B' && ope[1]=='P'){
-        strcpy(reg,"BP");
-        doscaracteres=1;
+    if (ope[0]=='A' || ope[0]=='B' || ope[0]=='C' || ope[0] == 'D' || ope[0] =='E'|| ope[0] =='F'){
+        
+        if (ope[0]=='A' && ope[1]=='C'){
+            strcpy(reg,"AC");
+            doscaracteres=1;
+        } else if(ope[0]=='B' && ope[1]=='P'){
+            strcpy(reg,"BP");
+            doscaracteres=1;
+        }
+        else if (ope[0]=='E' && (ope[1]=='A' || ope[1]=='B' || ope[1]=='C' || ope[1] == 'D' || ope[1] =='E'|| ope[1] =='F')){
+            reg[0]=ope[0];
+            reg[1]=ope[1];
+            reg[2]=ope[2];
+            reg[3]='\0';
+        } else{
+            reg[0]='E';
+            reg[1]=ope[0];
+            reg[2]=ope[1];
+            reg[3]='\0';
+            doscaracteres=1;
+        }
+        
+    } 
+
+    while (i<=15 && strcmp(reg,Registros[i].nombre)!=0) {
+    //  printf("Elemento %d del registro: %s \n", i, Registros[i].nombre);
+        i++;
+    }   
+
+    if (i>15)
+        printf("Registro inexistente");
+    else{            
+        if (!doscaracteres && ope[3]=='+' || ope[3]=='-'){     //hay offset
+            if (ope[4]>='0' && ope[4]<='9'){  //si es un digito
+                    //printf("Offset digito \n");
+                    k=4; 
+                    j=0;
+                    while (ope[k]!='\0'){
+                        simbol[j++]=ope[k++];
+                    }
+                    simbol[j]='\0';
+                    aux=atoi(simbol);
+            } else{                 
+                    k=4;
+                    j=0;
+                    while(ope[k]!='\0')               
+                        simbol[j++]=ope[k++];      
+                    simbol[j]='\0';
+
+                    ListaRotulos auxRotulos = LR;
+                    while (auxRotulos!=NULL && strcmp(simbol,auxRotulos->rotulo)!=0)
+                        auxRotulos=auxRotulos->sig;
+
+                    if (auxRotulos!=NULL)
+                        aux = auxRotulos->linea;    
+                    else{
+                        printf("ERROR: Simbolo %s inexistente. Deteniendo traduccion \n", simbol);    
+                        exit(0);
+                    }    
+            }
+            if (ope[3]=='-')
+                aux=-aux;
+            res=aux;
+            res= res << 4 | (i & 0xF);
+        } else if (doscaracteres && ope[2]=='+' || ope[2]=='-'){
+            if (ope[3]>='0' && ope[3]<='9'){  //si es un digito
+                printf("Offset digito 2 caracteres\n");
+                k=3; 
+                j=0;
+                while (ope[k]!='\0'){
+                    simbol[j++]=ope[k++];
+                }
+                simbol[j]='\0';
+                aux=atoi(simbol);
+        } else{                 
+                k=3;
+                j=0;
+                while(ope[k]!='\0')               
+                    simbol[j++]=ope[k++];      
+                simbol[j]='\0';
+
+                ListaRotulos auxRotulos = LR;
+                while (auxRotulos!=NULL && strcmp(simbol,auxRotulos->rotulo)!=0)
+                    auxRotulos=auxRotulos->sig;
+
+                if (auxRotulos!=NULL)
+                    aux = auxRotulos->linea;    
+                else{
+                    printf("ERROR: Simbolo %s inexistente. Deteniendo traduccion \n", simbol);    
+                    exit(0);
+                }
+        }
+        if (ope[2]=='-')
+            aux=-aux;
+        res = aux;
+        res = res << 4 | (i & 0xF);
+        }  else  //no hay offset
+            res = i & 0xF;      
     }
-    else if (ope[0]=='E' && (ope[1]=='A' || ope[1]=='B' || ope[1]=='C' || ope[1] == 'D' || ope[1] =='E'|| ope[1] =='F')){
-        reg[0]=ope[0];
-        reg[1]=ope[1];
-        reg[2]=ope[2];
-        reg[3]='\0';
-    } else{
-        reg[0]='E';
-        reg[1]=ope[0];
-        reg[2]=ope[1];
-        reg[3]='\0';
-        doscaracteres=1;
-    }
-    
-} 
-
-//printf("Reg: %s \n", reg);
-
-/* for (i=0;i<3;i++){
-    if (ope[0]=='A')
-
-
-    reg[i]=ope[i];
-} */
-
-while (i<=15 && strcmp(reg,Registros[i].nombre)!=0) {
-  //  printf("Elemento %d del registro: %s \n", i, Registros[i].nombre);
-    i++;
-}
-    
-
-if (i>15)
-    printf("Registro inexistente");
-else{            
-    if (!doscaracteres && ope[3]=='+' || ope[3]=='-'){     //hay offset
-      if (ope[4]>='0' && ope[4]<='9'){  //si es un digito
-            printf("Offset digito \n");
-            k=4; 
-            j=0;
-            while (ope[k]!='\0'){
-                simbol[j++]=ope[k++];
-            }
-            simbol[j]='\0';
-            aux=atoi(simbol);
-      } else{                 
-            k=4;
-            j=0;
-            while(ope[k]!='\0')               
-                simbol[j++]=ope[k++];      
-            simbol[j]='\0';
-
-            ListaRotulos auxRotulos = LR;
-            while (auxRotulos!=NULL && strcmp(simbol,auxRotulos->rotulo)!=0)
-                auxRotulos=auxRotulos->sig;
-
-            if (auxRotulos!=NULL)
-                aux = auxRotulos->linea;    
-            else{
-                printf("ERROR: Simbolo %s inexistente. Deteniendo traduccion \n", simbol);    
-                exit(0);
-            }
-    
-      }
-      res = aux << 4 | (i & 0xF);
-    } else if (doscaracteres && ope[2]=='+' || ope[2]=='-'){
-        if (ope[3]>='0' && ope[3]<='9'){  //si es un digito
-            printf("Offset digito 2 caracteres\n");
-            k=3; 
-            j=0;
-            while (ope[k]!='\0'){
-                simbol[j++]=ope[k++];
-            }
-            simbol[j]='\0';
-            aux=atoi(simbol);
-      } else{                 
-            k=3;
-            j=0;
-            while(ope[k]!='\0')               
-                simbol[j++]=ope[k++];      
-            simbol[j]='\0';
-
-            ListaRotulos auxRotulos = LR;
-            while (auxRotulos!=NULL && strcmp(simbol,auxRotulos->rotulo)!=0)
-                auxRotulos=auxRotulos->sig;
-
-            if (auxRotulos!=NULL)
-                aux = auxRotulos->linea;    
-            else{
-                printf("ERROR: Simbolo %s inexistente. Deteniendo traduccion \n", simbol);    
-                exit(0);
-            }
-      }
-      res = aux << 4 | (i & 0xF);
-    }  else  //no hay offset
-        res = i & 0xF;      
-}
-return (res & 0xFFF);
+    return (res & 0xFFF);
 }
 
 
