@@ -151,11 +151,12 @@ int main(int arg, char *args[])
                 printf("%X\n", Memoria[i]);
             }
 
+/*
             for (int i = 0; i < tamanoCS + 5; i++)
             {
                 printf("[%d]: %X\n",i,Memoria[i]);
             }
-            
+  */          
             fwrite(Memoria,sizeof(__int32),tamanoCS+6,archO);  
         }       
     }
