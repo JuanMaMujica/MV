@@ -1,11 +1,13 @@
-ldh 2
-ldl 64
-mov EBX, AC
-mov AH, %02
-mov AL, 3
-mov CH, 2
-mov CL, 8
-mov DH, 10
-mov DL, 0 
-sys %D
+SYS 15
+LDH 2
+LDL 15
+MOV EDX,AC
+MOV CX, 10
+MOV AX, %000
+SYS 3
+SYS 4
+SMOV [250],[EDX]
+MOV EDX,250
+SYS 4
+
 STOP

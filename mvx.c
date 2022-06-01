@@ -245,11 +245,11 @@ void sys(__int32 *a){
     __int32 reg=(Registros[13].ValorRegistro)>>16 & 0XFFFF;
     __int32 edx=Registros[13].ValorRegistro & 0xFFFF;
     __int16 ax=(Registros[10].ValorRegistro) & 0xFFFF;
-    __int32 direccionM = Registros[reg].ValorRegistro & 0XFFFF + edx; 
+    __int32 direccionM = (Registros[reg].ValorRegistro & 0XFFFF) + edx; 
     char straux[30],car[15],num1[15],num2[15];
     __int32 vector[128];
 
-    //printf("Entrando en el sys... valor de a: %d \n Valor del DS: %d. Valor del EDX:" , *a, ds, edx);
+   // printf("Entrando en el sys... valor de a: %d \n Valor del DS: %d. Valor del EDX: %d" , *a, ds, edx);
 
     if (*a == 0X1){
         //printf("Sys 1 \n");
@@ -315,7 +315,7 @@ void sys(__int32 *a){
                 MuestraCodigo();
             printf("[%d] cmd:",Registros[5].ValorRegistro);//muestro el ip en el prompt
             fflush(stdin);    
-            scanf("%s",car);      
+            gets(car);      
             
             if (car[0]=='p'){
                 breakpoint = 1;
@@ -356,45 +356,48 @@ void sys(__int32 *a){
         //ax= ax & 0xFFFF;
         //printf("Sys 3 \n");
         char aux[50];
-        //__int32 valor=Registros[reg].ValorRegistro & 0XFFFF + edx;
+        __int32 valor=(Registros[reg].ValorRegistro & 0XFFFF) + edx;
         if (!(ax & 0x800)){                            
-            printf("[%d]:\t", direccionM);
+            printf("[%d]:\t", valor);
         } 
         fflush(stdin);
-        scanf("%s",aux);
+        gets(aux);
         i=0;
        // printf("Longitud de la palabra: %d \n", strlen(aux));
         while(i<strlen(aux) && i<cx){
         //    printf ("Cargando caracter %c \n", aux[i]);
-            Memoria[direccionM+i]=aux[i];
+            Memoria[valor+i]=aux[i];
             i++;
         } 
-        Memoria[direccionM+i]='\0';
+        Memoria[valor+i]='\0';
+     //   printf("sys 3 terminao  \n");
      } else if (*a==0x4){        //string write
          //ax= ax & 0xFFFF;
-         //printf("Sys 4 \n");
+         printf("Sys 4 \n");
         i=0;
-        //__int32 valor=Registros[reg].ValorRegistro & 0XFFFF + edx;
-        if(direccionM < ((Registros[reg].ValorRegistro & 0XFFFF) + (Registros[reg].ValorRegistro>>16 & 0XFFFF))){
+        __int32 valor=(Registros[reg].ValorRegistro & 0XFFFF) + edx;
+      //   printf("Mi nuevo valor sera: %X + %X = %X \n", Registros[reg].ValorRegistro & 0XFFFF,edx,valor );
+        if(valor< ((Registros[reg].ValorRegistro & 0XFFFF) + (Registros[reg].ValorRegistro>>16 & 0XFFFF))){
             if (!(ax & 0x100)){    //printeo con endline
-                while (Memoria[direccionM+i]!='\0'){  
+                while (Memoria[valor+i]!='\0'){  
                     if (!(ax & 0x800)){   //printf sin prompt                  
-                        printf("[%d]:\t", direccionM+i);
+                        printf("[%d]:\t", valor+i);
                     }  
-                    printf("%c \n", Memoria[direccionM+i]);
+                    printf("%c \n", Memoria[valor+i]);
                     i++;
                 } 
             } else{   //print sin endline
-                while (Memoria[direccionM+i]!='\0'){   
+                while (Memoria[valor+i]!='\0'){   
                     if (!(ax & 0x800)){                            
-                        printf("[%d]:\t", direccionM+i);
+                        printf("[%d]:\t", valor+i);
                     } 
-                    printf("%c", Memoria[direccionM+i]);
+                    printf("%c", Memoria[valor+i]);
                     i++;
                 }
             }
         } else {
             printf("Segmentation Fault");
+            Errores[2]=1;
         }
     }
      else if (*a==0x7){
@@ -1001,7 +1004,7 @@ void leeInstruccion(){
         Registros[5].ValorRegistro++;
         
         mnemonico = leeMnemonico(instruccion,&cantidadOperandos);
-       // printf("Cod Mnemonico: %d\n", mnemonico);
+      //  printf("Cod Mnemonico: %d\n", mnemonico);
         if(cantidadOperandos == 2){
             tipoOp1 = (instruccion >> 26) & 0X3;
             tipoOp2 = (instruccion >> 24) & 0X3;
@@ -1048,16 +1051,18 @@ void leeInstruccion(){
                 if(mnemonico != 0X0 && mnemonico != 0X3 && mnemonico !=0X6 && mnemonico != 0XE && mnemonico != 0XD && mnemonico!= 0XC){ // cambia el valor de CC seguun el resultado que se calcule
                     cambiaCC(valorOp1);
                 }
+             //   printf("EDXH =  %X \t EDXL= %X\n", (Registros[13].ValorRegistro>>16 & 0xFFFF), Registros[13].ValorRegistro & 0xFFFF);
             }
-            
+
             
 
         } else if(cantidadOperandos == 1){
+         //    printf("Cod Mnemonico 1 instruccion: %d\n", mnemonico);
             tipoOp1 = (instruccion>>22) & 0X3;
             op1 = instruccion & 0XFFFF; 
             valorOp1 = decodificaOperando(op1,tipoOp1);
             if (Errores[2]==0){
-                printf("haciendo funcion: %X, valor: %X\n", mnemonico, valorOp1);
+              //  printf("haciendo funcion: %X, valor: %X\n", mnemonico, valorOp1);
                  (*fun2[mnemonico & 0XF])(&valorOp1);
                  if (mnemonico==0XFA || mnemonico==0XFB){   // RND, NOT
                     alamacenaRM(valorOp1,tipoOp1,op1);

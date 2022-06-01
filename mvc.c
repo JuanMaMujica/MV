@@ -150,7 +150,8 @@ int main(int arg, char *args[])
             while(Memoria[i]<6){
                 printf("%X\n", Memoria[i]);
             }
-            for (int i = 0; i < tamanoCS + 6; i++)
+
+            for (int i = 0; i < tamanoCS + 5; i++)
             {
                 printf("[%d]: %X\n",i,Memoria[i]);
             }
