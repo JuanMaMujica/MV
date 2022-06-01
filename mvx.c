@@ -245,7 +245,8 @@ void sys(__int32 *a){
     __int32 reg=(Registros[13].ValorRegistro)>>16 & 0XFFFF;
     __int32 edx=Registros[13].ValorRegistro & 0xFFFF;
     __int16 ax=(Registros[10].ValorRegistro) & 0xFFFF;
-    char straux[30],car[4],num1[4],num2[4];
+    __int32 direccionM = Registros[reg].ValorRegistro & 0XFFFF + edx; 
+    char straux[30],car[15],num1[15],num2[15];
     __int32 vector[128];
 
     //printf("Entrando en el sys... valor de a: %d \n Valor del DS: %d. Valor del EDX:" , *a, ds, edx);
@@ -254,28 +255,28 @@ void sys(__int32 *a){
         //printf("Sys 1 \n");
         if (ax & 0x100){     //bit vale 1
             if (!(ax & 0x800)){                             // muestra prompt. si vale 1, no entra.
-                printf("[%d]:\t", edx+ds+j);
+                printf("[%d]:\t", direccionM+j);
             } 
             scanf("%s", straux);
             while (j<cx && j<strlen(straux)){
-                Memoria[edx+ds+j]=straux[j++]; 
+                Memoria[direccionM+j]=straux[j++]; 
             }
             if(j<cx && j==strlen(straux))
-                Memoria[edx+ds+j]=0X0;       
+                Memoria[direccionM+j]=0X0;       
         } else{
             for(i=0x0;i<cx;i++){     // CX=0x3C  
-                if (!(ax & 0x800)){                                    // muestra prompt. si vale 1, no entra.
-                    printf("[%d]:\t ", edx+ds+i);
+                if (ax & 0x800){                                    // muestra prompt. si vale 1, no entra.
+                    printf("[%d]:\t ", direccionM+i);
                 }  
-                if (ax & 0x008){
+                if ((ax & 0x008)){
                     scanf("%x", &x);
-                    Memoria[edx+ds+i]=x;
+                    Memoria[direccionM+i]=x;
                 } else if (ax & 0x004){
                     scanf("%o", &x);
-                    Memoria[edx+ds+i]=x;
+                    Memoria[direccionM+i]=x;
                 } else if (ax & 0x001){
                     scanf("%d", &x);
-                    Memoria[edx+ds+i]=x;
+                    Memoria[direccionM+i]=x;
                 }
             }
         }
@@ -283,22 +284,22 @@ void sys(__int32 *a){
          //printf("Sys 2 \n");
         for (i=0;i<cx;i++){
             if (!(ax & 0x800)){
-                printf("[%d]:\t", edx+ds+i);     
+                printf("[%d]:\t", direccionM+i);     
             }
             if (ax & 0x010){ 
-                if (Memoria[edx+ds+i]<=0x7E && Memoria[edx+ds+i]>=0x20)  //si es imprimible printeo como char (creo que estos son los caracteres imprimibles, pero no se)
-                    printf("%c", Memoria[edx+ds+i] & 0XFF);
+                if (Memoria[direccionM+i]<=0x7E && Memoria[direccionM+i]>=0x20)  //si es imprimible printeo como char (creo que estos son los caracteres imprimibles, pero no se)
+                    printf("%c", Memoria[direccionM+i] & 0XFF);
                 else
                     printf(".");  //si no es imprimible printeo un punto
             }
             if (ax & 0x008){
-                printf("%x", Memoria[edx+ds+i]);
+                printf("%x", Memoria[direccionM+i]);
             }
             if (ax & 0x004){
-                printf("%o", Memoria[edx+ds+i]);
+                printf("%o", Memoria[direccionM+i]);
             }
             if (ax & 0x001){
-                printf("%d", Memoria[edx+ds+i]);
+                printf("%d", Memoria[direccionM+i]);
             }
             if (!(ax & 0x100)){     //si el bit 8 vale 0, agrego salto de línea despues de imprimir
                 printf("\n");
@@ -314,7 +315,7 @@ void sys(__int32 *a){
                 MuestraCodigo();
             printf("[%d] cmd:",Registros[5].ValorRegistro);//muestro el ip en el prompt
             fflush(stdin);    
-            scanf("%s",car);        
+            scanf("%s",car);      
             
             if (car[0]=='p'){
                 breakpoint = 1;
@@ -351,12 +352,13 @@ void sys(__int32 *a){
             }
         }
     }  else if (*a==0X3){       //string read
-        cx= cx & 0xFFFF;
-        ax= ax & 0xFFFF;
+        //cx= cx & 0xFFFF;
+        //ax= ax & 0xFFFF;
         //printf("Sys 3 \n");
         char aux[50];
+        //__int32 valor=Registros[reg].ValorRegistro & 0XFFFF + edx;
         if (!(ax & 0x800)){                            
-            printf("[%d]:\t", edx+ds);
+            printf("[%d]:\t", direccionM);
         } 
         fflush(stdin);
         scanf("%s",aux);
@@ -364,30 +366,30 @@ void sys(__int32 *a){
        // printf("Longitud de la palabra: %d \n", strlen(aux));
         while(i<strlen(aux) && i<cx){
         //    printf ("Cargando caracter %c \n", aux[i]);
-            Memoria[edx+ds+i]=aux[i];
+            Memoria[direccionM+i]=aux[i];
             i++;
         } 
-        Memoria[edx+ds+i]='\0';
+        Memoria[direccionM+i]='\0';
      } else if (*a==0x4){        //string write
          //ax= ax & 0xFFFF;
          //printf("Sys 4 \n");
         i=0;
-        __int32 valor=Registros[reg].ValorRegistro & 0XFFFF + edx;
-        if(valor < ((Registros[reg].ValorRegistro & 0XFFFF) + (Registros[reg].ValorRegistro>>16 & 0XFFFF))){
-            if ((!(ax & 0x100))){    //printeo con endline
-                while (Memoria[valor+i]!='\0'){  
-                    if (!(ax & 0x800)){                            
-                        printf("[%d]:\t", valor+i);
+        //__int32 valor=Registros[reg].ValorRegistro & 0XFFFF + edx;
+        if(direccionM < ((Registros[reg].ValorRegistro & 0XFFFF) + (Registros[reg].ValorRegistro>>16 & 0XFFFF))){
+            if (!(ax & 0x100)){    //printeo con endline
+                while (Memoria[direccionM+i]!='\0'){  
+                    if (!(ax & 0x800)){   //printf sin prompt                  
+                        printf("[%d]:\t", direccionM+i);
                     }  
-                    printf("%c \n", Memoria[valor+i]);
+                    printf("%c \n", Memoria[direccionM+i]);
                     i++;
                 } 
             } else{   //print sin endline
-                while (Memoria[valor+i]!='\0'){   
+                while (Memoria[direccionM+i]!='\0'){   
                     if (!(ax & 0x800)){                            
-                        printf("[%d]:\t", valor+i);
+                        printf("[%d]:\t", direccionM+i);
                     } 
-                    printf("%c", Memoria[valor+i]);
+                    printf("%c", Memoria[direccionM+i]);
                     i++;
                 }
             }
@@ -691,7 +693,7 @@ void sys(__int32 *a){
             } else
                 estado=0x01;  //funcion invalida
             }
-            }
+        }
         } 
      }
 
@@ -815,12 +817,12 @@ int main(int arg,char *args[]){
             printf("Disco %s \n", aux->nombreDisco);
             aux=aux->sig;
         }
-    */
-        for (int i = 0; i <= Header[4]-5; i++)
+    
+        for (int i = 0; i < Header[4]; i++)
         {
             printf("%X\n",Memoria[i]);
         }
-        
+     */   
         if(archI!=NULL){    
             if (arg>1){ //Si hay banderas, se fija cuáles están.
                 for (int i=2; i < arg; i++){
@@ -1143,14 +1145,15 @@ __int32 decodificaOperando(__int32 op, __int32 tipoOp){
         __int32 seg = Registros[codSeg].ValorRegistro & 0xFFFF;        //donde comienza el segmento en memoria
         __int32 tamSeg = Registros[codSeg].ValorRegistro >> 16 & 0XFFFF;        //tamaño del segmento referenciado
         __int32 valorRegistro = Registros[codReg].ValorRegistro & 0xFFFF;   //valor registro
-
+/*
         printf("Codigo registro: %X \n", codReg);
         printf("Codigo de segmento: %d Tamano del segmento: %d \n", codSeg, tamSeg);
         printf("El segmento comienza en la celda %d \n", seg);
         printf("El valor de mi registro es de %d \n", valorRegistro); 
+        */
         if(codSeg >= 0 && codSeg<=3){
             if (seg+valorRegistro+offset<=tamSeg+seg){
-                printf("La posicion de memoria es: %d y el valor es: %d",seg+valorRegistro+offset, Memoria[seg+valorRegistro+offset]);
+                //printf("La posicion de memoria es: %d y el valor es: %d",seg+valorRegistro+offset, Memoria[seg+valorRegistro+offset]);
                 valorOp= Memoria[seg+valorRegistro+offset];
             } else{
                 Errores[2]=1;
@@ -1289,11 +1292,11 @@ void Dissasembler(int pos_memoria){
                 __int32 reg = inst>>12 & 0XF;
                 __int8 offset = inst>>16 & 0XFF;
                 if(offset>0)
-                    printf("[%s+%d]",Registros[reg].nombre,offset);
+                    printf("[%s+%d], ",Registros[reg].nombre,offset);
                 else if(offset<0)
-                    printf("[%s-%d]",Registros[reg].nombre,offset);
+                    printf("[%s-%d], ",Registros[reg].nombre,offset);
                 else
-                    printf("[%s]",Registros[reg].nombre);        
+                    printf("[%s], ",Registros[reg].nombre);        
             }
             
             else { // Si operando 1 es inmediato
@@ -1330,18 +1333,18 @@ void Dissasembler(int pos_memoria){
                 __int32 reg = inst & 0XF;
                 __int8 offset = inst>>4 & 0XFF;
                 if(offset>0)
-                    printf("[%s+%d],",Registros[reg].nombre,offset);
+                    printf("[%s+%d]",Registros[reg].nombre,offset);
                 else if(offset<0)
-                    printf("[%s-%d],",Registros[reg].nombre,offset);
+                    printf("[%s-%d]",Registros[reg].nombre,offset);
                 else
-                    printf("[%s],",Registros[reg].nombre);        
+                    printf("[%s]",Registros[reg].nombre);        
             }
             else { // Si operando 2 es inmediato
                 op=(inst&0x00000FFF);
                 op=op<<20;
                 op=op>>20;
                 printf("%d",op);
-            } //else PONER INDIRECTOS
+            }
         }
     }
 }

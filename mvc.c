@@ -150,12 +150,12 @@ int main(int arg, char *args[])
             while(Memoria[i]<6){
                 printf("%X\n", Memoria[i]);
             }
-            for (int i = 0; i < tamanoCS + 5; i++)
+            for (int i = 0; i < tamanoCS + 6; i++)
             {
                 printf("[%d]: %X\n",i,Memoria[i]);
             }
             
-            fwrite(Memoria,sizeof(__int32),tamanoCS,archO);  
+            fwrite(Memoria,sizeof(__int32),tamanoCS+6,archO);  
         }       
     }
     fclose(archO);
