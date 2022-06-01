@@ -139,6 +139,10 @@ int main(int arg, char *args[])
                     printf("%s\n",parsed[4]);
                 }      
         }
+        {
+            /* code */
+        }
+        
         freeline(parsed);
       
         if(error==0){
@@ -146,7 +150,12 @@ int main(int arg, char *args[])
             while(Memoria[i]<6){
                 printf("%X\n", Memoria[i]);
             }
-            fwrite(Memoria,sizeof(__int32),j,archO);   
+            for (int i = 0; i < tamanoCS + 5; i++)
+            {
+                printf("[%d]: %X\n",i,Memoria[i]);
+            }
+            
+            fwrite(Memoria,sizeof(__int32),tamanoCS,archO);  
         }       
     }
     fclose(archO);

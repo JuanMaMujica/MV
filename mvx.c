@@ -816,7 +816,11 @@ int main(int arg,char *args[]){
             aux=aux->sig;
         }
     */
-
+        for (int i = 0; i <= Header[4]-5; i++)
+        {
+            printf("%X\n",Memoria[i]);
+        }
+        
         if(archI!=NULL){    
             if (arg>1){ //Si hay banderas, se fija cuáles están.
                 for (int i=2; i < arg; i++){
@@ -1059,9 +1063,7 @@ void leeInstruccion(){
                 if (mnemonico==0XFB){
                     cambiaCC(valorOp1);
                 }
-
             }
-            
         } else {
             if(mnemonico == mnemonicos[31].cod)
                 stop();
@@ -1127,26 +1129,26 @@ __int32 decodificaOperando(__int32 op, __int32 tipoOp){
         }
     } else if(tipoOp == 2) {    //es directo
        //cambiar considerando los distintos segmentos
-        __int32 direccion = (Registros[0].ValorRegistro & 0xFFFF) + op;
+        __int32 direccion = (op+Registros[0].ValorRegistro & 0xFFFF);
         __int32 tamseg = Registros[0].ValorRegistro >> 16;
         if((direccion >= Registros[0].ValorRegistro & 0xFFFF) && (direccion <= (Registros[0].ValorRegistro & 0xFFFF + tamseg)))
-            valorOp = Memoria[op+Registros[0].ValorRegistro & 0xFFFF];
+            valorOp = Memoria[direccion];
         else{
             Errores[2];
         }
     } else if (tipoOp == 3){   //indirecto.
         __int8 offset = valorOp >> 4;                                   //offset
         __int8 codReg = valorOp & 0xF;                                 //numero de registro que viene de la traduccion
-        __int32 codSeg = Registros[codReg].ValorRegistro >> 16 & 0XFFFF;        // codigo del segmento al que referenciaré
+        __int32 codSeg = (Registros[codReg].ValorRegistro >> 16) & 0XFFFF;        // codigo del segmento al que referenciaré
         __int32 seg = Registros[codSeg].ValorRegistro & 0xFFFF;        //donde comienza el segmento en memoria
         __int32 tamSeg = Registros[codSeg].ValorRegistro >> 16 & 0XFFFF;        //tamaño del segmento referenciado
         __int32 valorRegistro = Registros[codReg].ValorRegistro & 0xFFFF;   //valor registro
 
-     /*   printf("Codigo registro: %X \n", codReg);
+        printf("Codigo registro: %X \n", codReg);
         printf("Codigo de segmento: %d Tamano del segmento: %d \n", codSeg, tamSeg);
         printf("El segmento comienza en la celda %d \n", seg);
-        printf("El valor de mi registro es de %d \n", valorRegistro); */
-        if(seg >= 0 && seg<=3){
+        printf("El valor de mi registro es de %d \n", valorRegistro); 
+        if(codSeg >= 0 && codSeg<=3){
             if (seg+valorRegistro+offset<=tamSeg+seg){
                 printf("La posicion de memoria es: %d y el valor es: %d",seg+valorRegistro+offset, Memoria[seg+valorRegistro+offset]);
                 valorOp= Memoria[seg+valorRegistro+offset];

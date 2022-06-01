@@ -1,4 +1,4 @@
-\\EXTRA 1024
+\\EXTRA 15
 ;Inicializa HEAP (manual)
         ldh     2
         sys     %F
