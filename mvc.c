@@ -335,7 +335,6 @@ void buscaRotulo(ListaRotulos *LR, FILE *archA, int *tamanoCS, int *tamanoDS, in
             strcpy (auxA,parsed[8]);
             strcpy (auxnombre,parsed[7]);
 
-             printf("Nombre constante: %s valor: %s \n", parsed[7],parsed[8]);
             if(auxA[0]=='"'){
                 int l=0;
                 while (auxA[l+1]!='"'){
@@ -343,16 +342,12 @@ void buscaRotulo(ListaRotulos *LR, FILE *archA, int *tamanoCS, int *tamanoDS, in
                     l++;
                 }
                 auxV[l+1]='\0';
-              //  auxV = &auxA[1];
-              //  auxV[strlen(auxV)-1]='\0';    //Aca ya me queda el string sin comillas
+
             } else {
-                //printf("paso a auxv. no soy estrin \n");
                 strcpy(auxV,auxA);  //si no es un string se lo pasa tal cual esta
-               // printf("AuxV: [%s] \t AuxNombre: %s \n", auxV, auxnombre);
             }
             if ((auxnombre[0]<'0' || auxnombre[0]>'9') && strlen(auxnombre)>=3 && strlen(auxnombre)<=10){    //verifico que el nombre del simbolo tenga mas de 3 y menos de 10 caracteres. y que el primer caracter no sea un digito
                 if (auxV[1]!='\0' && ((auxV[0]<'0' || auxV[0]>'9') && !(auxV[0]=='@' || auxV[0]=='%' || auxV[0]=='#' || auxV[0]=='-'))){    //si el valor del simbolo es un string
-                    printf("Soy estrin!! \n");
                     if (!duplicado(*LR,auxnombre) && !duplicadoStr(*LS,auxnombre)){
                         strToUpper(auxnombre);
                         ListaString aux;
@@ -362,22 +357,20 @@ void buscaRotulo(ListaRotulos *LR, FILE *archA, int *tamanoCS, int *tamanoDS, in
                         aux->sig=*LS;      //crear lista string
                         *LS=aux;
                     } else{
-                        printf("ERROR: Simbolo string %s duplicado. Traduccion detenida \n", auxnombre);
+                        printf("WARNING: Simbolo string %s duplicado. \n", auxnombre);
                         error=1;
                     }
                 } else{      //no es string
-                      //  printf("simbolo no estrin \n");
                     if (!duplicado(*LR,auxnombre) && !duplicadoStr(*LS,auxnombre)){
-                      printf("Cargando simbolo no string %s \n", auxnombre);
                       ingresarRotulo(LR,parsed[7],DevuelveConstantValue(parsed[8]));   
                     }
                     else{
-                        printf("ERROR: Simbolo %s duplicado. Deteniendo traduccion \n", auxnombre);
+                        printf("WARNING: Simbolo %s duplicado.  \n", auxnombre);
                         error=1;
                     }
                 }
             }else {
-                printf("ERROR: Simbolo %s invalido. Traduccion detenida \n", auxnombre);    //aca no se si ponerle un warning y que siga traduciendo o que cancele de una xd
+                printf("WARNING: Simbolo %s invalido.\n", auxnombre);    //aca no se si ponerle un warning y que siga traduciendo o que cancele de una xd
                 error=1;
             }
         }
