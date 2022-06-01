@@ -312,12 +312,9 @@ void sys(__int32 *a){
                 system("cls");     
             if (banderas[2])    //disassembler 
                 MuestraCodigo();
-            printf("[%d] cmd: ",Registros[5].ValorRegistro);//muestro el ip en el prompt
+            printf("[%d] cmd:",Registros[5].ValorRegistro);//muestro el ip en el prompt
             fflush(stdin);    
-            gets(car);
-
-            
-            
+            scanf("%s",car);        
             
             if (car[0]=='p'){
                 breakpoint = 1;
@@ -328,7 +325,9 @@ void sys(__int32 *a){
                     num1[i]=car[i];
                     i++;
                 }
-                x=atoi(num1);         //convierto num1 a integer
+                num1[i]='\0';
+                x=atoi(num1);
+                printf("%d\n",x);         //convierto num1 a integer
                 if (car[i]=='\0')    //si no hay nada, entonces no hay segundo numero
                     printf("[%d]: Hexa: %X Decimal: %d \n", x, Memoria[x], Memoria[x]);
                 else if (car[i]==' '){    //si hay espacio, hay segundo numero. no validé que entre otra cosa
@@ -1009,7 +1008,8 @@ void leeInstruccion(){
                 valorOp1 = decodificaString(op1,tipoOp1);
                 valorOp2 = decodificaString(op2,tipoOp2);
 
-            } 
+            }
+            /* 
             sectorOp2 = op2>>4 & 0X3;
             if(tipoOp2 == 0){
                 valorOp2=valorOp2<<20;  //propaga el bit de signo de un operando inmediato negativo, de ser positivo no importa el corrimiento queda igual
@@ -1031,6 +1031,7 @@ void leeInstruccion(){
                     break;
                 }
             }
+            */
             if (Errores[2]==0){
                     (*fun[mnemonico])(&valorOp1,&valorOp2); //llama a la instruccion correspondiente dependiendo del mnemonico
                 if(mnemonico!=0X6 && mnemonico != 0xE && mnemonico != 0xD){ // alamcena los valores calculados anteriormente en los registros o memoria correspondiente menos en el cmp 
@@ -1136,9 +1137,9 @@ __int32 decodificaOperando(__int32 op, __int32 tipoOp){
     } else if (tipoOp == 3){   //indirecto.
         __int8 offset = valorOp >> 4;                                   //offset
         __int8 codReg = valorOp & 0xF;                                 //numero de registro que viene de la traduccion
-        __int32 codSeg = Registros[codReg].ValorRegistro >> 16;        // codigo del segmento al que referenciaré
+        __int32 codSeg = Registros[codReg].ValorRegistro >> 16 & 0XFFFF;        // codigo del segmento al que referenciaré
         __int32 seg = Registros[codSeg].ValorRegistro & 0xFFFF;        //donde comienza el segmento en memoria
-        __int32 tamSeg = Registros[codSeg].ValorRegistro >> 16;        //tamaño del segmento referenciado
+        __int32 tamSeg = Registros[codSeg].ValorRegistro >> 16 & 0XFFFF;        //tamaño del segmento referenciado
         __int32 valorRegistro = Registros[codReg].ValorRegistro & 0xFFFF;   //valor registro
 
      /*   printf("Codigo registro: %X \n", codReg);
@@ -1147,14 +1148,14 @@ __int32 decodificaOperando(__int32 op, __int32 tipoOp){
         printf("El valor de mi registro es de %d \n", valorRegistro); */
         if(seg >= 0 && seg<=3){
             if (seg+valorRegistro+offset<=tamSeg+seg){
-                //printf("La posicion de memoria es: %d y el valor es: %d",seg+valorRegistro+offset, Memoria[seg+valorRegistro+offset]);
+                printf("La posicion de memoria es: %d y el valor es: %d",seg+valorRegistro+offset, Memoria[seg+valorRegistro+offset]);
                 valorOp= Memoria[seg+valorRegistro+offset];
             } else{
-                Errores[2];
+                Errores[2]=1;
             }
         }
         else{    
-            Errores[2];
+            Errores[2]=1;
         }
     }
     return valorOp; // si es inmediato lo devuelve igual
