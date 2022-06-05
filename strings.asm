@@ -1,11 +1,12 @@
 \\EXTRA 15
 ;Inicializa HEAP (manual)
         ldh     2
+        sys     %F
         ldl     0
         mov     [ac], ac
         add     [ac], 1
 ; Escribe mensaje al usuario
-msg     equ     "abc" 
+msg     equ     "Escriba palabras seguidas de ENTER (en blanco para terminar)"
         ldh     3
         ldl     msg
         mov     eax, %800
@@ -13,7 +14,6 @@ msg     equ     "abc"
         mov     edx, ac
         sys     %4
         mov     ecx, 1 
-        SYS 15
 ; Lee una palabra en DS[0]
         ldh     2
         ldl     0

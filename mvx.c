@@ -795,7 +795,7 @@ int main(int arg,char *args[]){
         cargaMnemonicos();
         InicializaRegistros();
         
-        /*
+        
         FILE *archDiscos;
         
         TListaDiscos discos=NULL;
@@ -820,12 +820,13 @@ int main(int arg,char *args[]){
             printf("Disco %s \n", aux->nombreDisco);
             aux=aux->sig;
         }
-    
+    /*
         for (int i = 0; i < Header[4]; i++)
         {
             printf("%X\n",Memoria[i]);
         }
-     */   
+        */
+      
         if(archI!=NULL){    
             if (arg>1){ //Si hay banderas, se fija cuáles están.
                 for (int i=2; i < arg; i++){

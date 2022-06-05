@@ -7,7 +7,7 @@ left    equ     1
 right   equ     2
 ; constantes
 NULL    equ     -1
-titulo  equ  "--- PRUEBA ARBOL BINARIO DE BUSQUEDA ---"
+titulo  equ  "___ PRUEBA ARBOL BINARIO DE BUSQUEDA ___"
 msg_1   equ  "Recorrido en in-order:"
 msg_2   equ  "Recorrido en pre-order:"
 root    equ      1 

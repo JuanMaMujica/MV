@@ -19,7 +19,7 @@ sigue:	mul 	[ecx+ant],10
 		mul 	[ecx+sig],10
 		mul 	[ebx-1],10
 		mul 	[ebx],10
-		mul 	[ebx-ant],10
+		mul 	[ebx-1],10
         mov     [eax],[ecx-sig]
 		push 	[eax]
 		push 	[eax]
@@ -37,8 +37,4 @@ sigue:	mul 	[ecx+ant],10
 		mov		edx, 1
 		sys 	%2				
 		sys		%F
-		stop
-		stop
-		stop
-		stop
 		stop
