@@ -1,1 +1,1 @@
-                cmp     ac, HP      ; verifico que no se alla pasado del limite del extra segment
+                ret       

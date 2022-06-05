@@ -23,7 +23,7 @@ typedef struct {
 } elementosMnemonicos;
 
 typedef struct nodo {
-    char rotulo[10];
+    char rotulo[50];
     __int32 linea;
     struct nodo *sig;
 }   nodo;
@@ -95,7 +95,7 @@ int main(int arg, char *args[])
         while(LS!=NULL){      //inserto constantes string despues del CS (Lo chekie anda bien)
             k=0;
             int len=strlen(LS->valor);
-            while (k<=len+1){
+            while (k<=len){
                 if(k==0){
                     int direccion=tamanoCS;
                     ListaRotulos aux;
@@ -310,7 +310,7 @@ void buscaRotulo(ListaRotulos *LR, FILE *archA, int *tamanoCS, int *tamanoDS, in
     char instruccionAss[256];
     char **parsed;
     int i=0;
-    char auxrotulo[20];
+    char auxrotulo[50];
 
     while(!feof(archA)){
         fgets(instruccionAss,256,archA);  //lee la linea correspondiente del archivo asm
@@ -352,7 +352,7 @@ void buscaRotulo(ListaRotulos *LR, FILE *archA, int *tamanoCS, int *tamanoDS, in
                     auxV[l]=auxA[l+1];
                     l++;
                 }
-                auxV[l+1]='\0';
+                auxV[l]='\0';
 
             } else {
                 strcpy(auxV,auxA);  //si no es un string se lo pasa tal cual esta
@@ -422,7 +422,7 @@ void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemon
     __int32 mnemonico,op1,op2;
     int tipoOpe1,tipoOpe2;
     //error=0;
-    char comentario[]=";";
+    char comentario[100]=";";
         if(parsed[4]!=NULL){
             strcat(comentario,parsed[4]); 
         } else {
@@ -739,7 +739,7 @@ __int32 DevuelveIndirecto(char operando[],TRegistros Registros[], ListaRotulos L
             res= res << 4 | (i & 0xF);
         } else if (doscaracteres && ope[2]=='+' || ope[2]=='-'){
             if (ope[3]>='0' && ope[3]<='9'){  //si es un digito
-                printf("Offset digito 2 caracteres\n");
+              //  printf("Offset digito 2 caracteres\n");
                 k=3; 
                 j=0;
                 while (ope[k]!='\0'){
