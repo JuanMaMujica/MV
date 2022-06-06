@@ -14,7 +14,8 @@ root    equ      1
 
 ;main
                 
-main:           push    1       ;creo la raiz del árbol
+main:           sys     %F
+                push    1       ;creo la raiz del árbol
                 call    alloc
                 add     sp, 1
 
@@ -29,6 +30,8 @@ main:           push    1       ;creo la raiz del árbol
                 mov     edx, ac
                 mov     ax, %800
                 sys     %4
+
+   
 
                 push    10
                 push    [root]
@@ -94,7 +97,7 @@ main_end:       stop
 insertValue:    push    bp
                 mov     bp, sp
                 push    eax
-                sys     %F
+          
 
                 
                 push    [bp+3]

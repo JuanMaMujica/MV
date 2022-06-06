@@ -288,18 +288,18 @@ void sys(__int32 *a){
             }
             if (ax & 0x010){ 
                 if (Memoria[direccionM+i]<=0x7E && Memoria[direccionM+i]>=0x20)  //si es imprimible printeo como char (creo que estos son los caracteres imprimibles, pero no se)
-                    printf("%c", Memoria[direccionM+i] & 0XFF);
+                    printf("%c ", Memoria[direccionM+i] & 0XFF);
                 else
                     printf(".");  //si no es imprimible printeo un punto
             }
             if (ax & 0x008){
-                printf("%x", Memoria[direccionM+i]);
+                printf("%x ", Memoria[direccionM+i]);
             }
             if (ax & 0x004){
-                printf("%o", Memoria[direccionM+i]);
+                printf("%o ", Memoria[direccionM+i]);
             }
             if (ax & 0x001){
-                printf("%d", Memoria[direccionM+i]);
+                printf("%d ", Memoria[direccionM+i]);
             }
             if (!(ax & 0x100)){     //si el bit 8 vale 0, agrego salto de línea despues de imprimir
                 printf("\n");
@@ -1137,14 +1137,13 @@ __int32 decodificaOperando(__int32 op, __int32 tipoOp){
             valorOp = Registros[registro].ValorRegistro & 0XFFFF;
         }
     } else if(tipoOp == 2) {    //es directo
-       //cambiar considerando los distintos segmentos
-        __int32 direccion = (op+Registros[0].ValorRegistro & 0xFFFF);
+        __int32 direccion = (op+(Registros[0].ValorRegistro & 0xFFFF));
         __int32 tamseg = (Registros[0].ValorRegistro >> 16) & 0XFFFF;
-        if((direccion >= Registros[0].ValorRegistro & 0xFFFF) && (direccion < (Registros[0].ValorRegistro & 0xFFFF + tamseg)))
+        if((direccion >= (Registros[0].ValorRegistro & 0xFFFF)) && (direccion < ((Registros[0].ValorRegistro & 0xFFFF) + tamseg)))
             valorOp = Memoria[direccion];
-        else{
+        else
             Errores[2];
-        }
+        
     } else if (tipoOp == 3){   //indirecto.
         __int8 offset = valorOp >> 4;                                   //offset
         __int8 codReg = valorOp & 0xF;                                 //numero de registro que viene de la traduccion
