@@ -373,7 +373,7 @@ void sys(__int32 *a){
      //   printf("sys 3 terminao  \n");
      } else if (*a==0x4){        //string write
          //ax= ax & 0xFFFF;
-         printf("Sys 4 \n");
+    //     printf("Sys 4 \n");
         i=0;
         __int32 valor=(Registros[reg].ValorRegistro & 0XFFFF) + edx;
       //   printf("Mi nuevo valor sera: %X + %X = %X \n", Registros[reg].ValorRegistro & 0XFFFF,edx,valor );
@@ -383,9 +383,10 @@ void sys(__int32 *a){
                     if (!(ax & 0x800)){   //printf sin prompt                  
                         printf("[%d]:\t", valor+i);
                     }  
-                    printf("%c \n", Memoria[valor+i]);
+                    printf("%c", Memoria[valor+i]);
                     i++;
                 } 
+                printf("\n");
             } else{   //print sin endline
                 while (Memoria[valor+i]!='\0'){   
                     if (!(ax & 0x800)){                            
@@ -738,6 +739,7 @@ void push(__int32 *a){
        Errores[3] = 1; 
     else{
         Registros[6].ValorRegistro-=1;
+        SPL--;
         //SetParteBaja(6, SPL - 1); Siempre guarda en la parte de arriba de la pila y decrementa el SPL.
         Memoria[(Registros[1].ValorRegistro & 0XFFFF) + SPL] = (*a); //GetParteBaja(1) = direccion del SS.
     }
@@ -745,7 +747,7 @@ void push(__int32 *a){
 
 void pop(__int32 *a){
     int SPL = Registros[6].ValorRegistro & 0XFFFF; //GetParteBaja(6);
-    if(SPL > Registros[1].ValorRegistro >> 16)// Direccion SS + SPL
+    if(SPL >= (Registros[1].ValorRegistro >> 16) & 0XFFFF)// Direccion SS + SPL
        Errores[4] = 1;// detiene_ejecucion=3; //Stack Underflow Este es otro error 
     else{
         (*a) = Memoria[(Registros[1].ValorRegistro & 0XFFFF) + SPL];
@@ -1019,7 +1021,7 @@ void leeInstruccion(){
                 valorOp2 = decodificaString(op2,tipoOp2);
 
             }
-            /* 
+         
             sectorOp2 = op2>>4 & 0X3;
             if(tipoOp2 == 0){
                 valorOp2=valorOp2<<20;  //propaga el bit de signo de un operando inmediato negativo, de ser positivo no importa el corrimiento queda igual
@@ -1041,7 +1043,7 @@ void leeInstruccion(){
                     break;
                 }
             }
-            */
+            
             if (Errores[2]==0){
                     (*fun[mnemonico])(&valorOp1,&valorOp2); //llama a la instruccion correspondiente dependiendo del mnemonico
                 if(mnemonico!=0X6 && mnemonico != 0xE && mnemonico != 0xD){ // alamcena los valores calculados anteriormente en los registros o memoria correspondiente menos en el cmp 
@@ -1064,7 +1066,7 @@ void leeInstruccion(){
             if (Errores[2]==0){
               //  printf("haciendo funcion: %X, valor: %X\n", mnemonico, valorOp1);
                  (*fun2[mnemonico & 0XF])(&valorOp1);
-                 if (mnemonico==0XFA || mnemonico==0XFB){   // RND, NOT
+                 if (mnemonico==0XFA || mnemonico==0XFB || mnemonico==0XFD){   // RND, NOT
                     alamacenaRM(valorOp1,tipoOp1,op1);
                  }
                 if (mnemonico==0XFB){
@@ -1137,8 +1139,8 @@ __int32 decodificaOperando(__int32 op, __int32 tipoOp){
     } else if(tipoOp == 2) {    //es directo
        //cambiar considerando los distintos segmentos
         __int32 direccion = (op+Registros[0].ValorRegistro & 0xFFFF);
-        __int32 tamseg = Registros[0].ValorRegistro >> 16;
-        if((direccion >= Registros[0].ValorRegistro & 0xFFFF) && (direccion <= (Registros[0].ValorRegistro & 0xFFFF + tamseg)))
+        __int32 tamseg = (Registros[0].ValorRegistro >> 16) & 0XFFFF;
+        if((direccion >= Registros[0].ValorRegistro & 0xFFFF) && (direccion < (Registros[0].ValorRegistro & 0xFFFF + tamseg)))
             valorOp = Memoria[direccion];
         else{
             Errores[2];

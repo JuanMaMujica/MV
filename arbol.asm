@@ -13,13 +13,14 @@ msg_2   equ  "Recorrido en pre-order:"
 root    equ      1 
 
 ;main
-                sys     %F
+                
 main:           push    1       ;creo la raiz del árbol
                 call    alloc
                 add     sp, 1
 
                 cmp     eax, NULL
                 jz      main_end
+
                 mov     [eax], NULL
                 mov     [root], eax
                 
@@ -93,6 +94,7 @@ main_end:       stop
 insertValue:    push    bp
                 mov     bp, sp
                 push    eax
+                sys     %F
 
                 
                 push    [bp+3]
