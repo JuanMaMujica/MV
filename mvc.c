@@ -309,10 +309,11 @@ void strToUpper(char palabra[]){      //Pasa a mayusculas el string que le manda
 void buscaRotulo(ListaRotulos *LR, FILE *archA, int *tamanoCS, int *tamanoDS, int *tamanoES, int *tamanoSS, ListaString *LS){
     char instruccionAss[256];
     char **parsed;
-    int i=0;
+    int i=0,isString;
     char auxrotulo[50];
 
     while(!feof(archA)){
+        isString=0;
         fgets(instruccionAss,256,archA);  //lee la linea correspondiente del archivo asm
         parsed = parseline(instruccionAss);
         if(parsed[0]!=NULL && parsed[1]!=NULL){
@@ -347,6 +348,7 @@ void buscaRotulo(ListaRotulos *LR, FILE *archA, int *tamanoCS, int *tamanoDS, in
             strcpy (auxnombre,parsed[7]);
 
             if(auxA[0]=='"'){
+                isString = 1;
                 int l=0;
                 while (auxA[l+1]!='"'){
                     auxV[l]=auxA[l+1];
@@ -358,7 +360,7 @@ void buscaRotulo(ListaRotulos *LR, FILE *archA, int *tamanoCS, int *tamanoDS, in
                 strcpy(auxV,auxA);  //si no es un string se lo pasa tal cual esta
             }
             if ((auxnombre[0]<'0' || auxnombre[0]>'9') && strlen(auxnombre)>=3 && strlen(auxnombre)<=10){    //verifico que el nombre del simbolo tenga mas de 3 y menos de 10 caracteres. y que el primer caracter no sea un digito
-                if (auxV[1]!='\0' && ((auxV[0]<'0' || auxV[0]>'9') && !(auxV[0]=='@' || auxV[0]=='%' || auxV[0]=='#' || auxV[0]=='-'))){    //si el valor del simbolo es un string
+                if (isString){    //si el valor del simbolo es un string       auxV[1]!='\0' && ((auxV[0]<'0' || auxV[0]>'9') && !(auxV[0]=='@' || auxV[0]=='%' || auxV[0]=='#' || auxV[0]=='-'))
                     if (!duplicado(*LR,auxnombre) && !duplicadoStr(*LS,auxnombre)){
                         strToUpper(auxnombre);
                         ListaString aux;

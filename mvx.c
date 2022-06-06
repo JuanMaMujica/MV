@@ -739,8 +739,7 @@ void push(__int32 *a){
     else{
         Registros[6].ValorRegistro-=1;
         //SetParteBaja(6, SPL - 1); Siempre guarda en la parte de arriba de la pila y decrementa el SPL.
-        SPL--;
-        Memoria[Registros[1].ValorRegistro & 0XFFFF + SPL] = (*a); //GetParteBaja(1) = direccion del SS.
+        Memoria[(Registros[1].ValorRegistro & 0XFFFF) + SPL] = (*a); //GetParteBaja(1) = direccion del SS.
     }
 }
 
@@ -749,7 +748,7 @@ void pop(__int32 *a){
     if(SPL > Registros[1].ValorRegistro >> 16)// Direccion SS + SPL
        Errores[4] = 1;// detiene_ejecucion=3; //Stack Underflow Este es otro error 
     else{
-        (*a) = Memoria[Registros[1].ValorRegistro & 0XFFFF + SPL];
+        (*a) = Memoria[(Registros[1].ValorRegistro & 0XFFFF) + SPL];
         Registros[6].ValorRegistro+=1; //SetParteBaja(6, SPL + 1);
     }
 }
@@ -830,7 +829,7 @@ int main(int arg,char *args[]){
         if(archI!=NULL){    
             if (arg>1){ //Si hay banderas, se fija cuáles están.
                 for (int i=2; i < arg; i++){
-                    printf("%s",args[i]);
+                    //printf("%s",args[i]);
                     if (strcmp(args[i], "-b") == 0){
                         banderas[0] = 1;
                     }
@@ -869,7 +868,7 @@ void InicializaRegistros(){
     strcpy(Registros[3].nombre,"CS "); Registros[3].ValorRegistro = Header[4]<<16;
     strcpy(Registros[4].nombre,"HP "); Registros[4].ValorRegistro= 0x00020000;
     strcpy(Registros[5].nombre,"IP "); Registros[5].ValorRegistro= 0X00000000;
-    strcpy(Registros[6].nombre,"SP "); Registros[6].ValorRegistro= 0x00010000 | (Registros[1].ValorRegistro>>16 && 0xFFFF); 
+    strcpy(Registros[6].nombre,"SP "); Registros[6].ValorRegistro= 0x00010000 | (Registros[1].ValorRegistro>>16 & 0xFFFF); 
     strcpy(Registros[7].nombre,"BP "); Registros[7].ValorRegistro= 0x00010000;
     strcpy(Registros[8].nombre,"CC "); Registros[8].ValorRegistro=0;
     strcpy(Registros[9].nombre,"AC "); Registros[9].ValorRegistro=0;
@@ -1003,6 +1002,7 @@ void leeInstruccion(){
 
         instruccion = Memoria[Registros[5].ValorRegistro];
         Registros[5].ValorRegistro++;
+
         
         mnemonico = leeMnemonico(instruccion,&cantidadOperandos);
       //  printf("Cod Mnemonico: %d\n", mnemonico);
@@ -1056,7 +1056,6 @@ void leeInstruccion(){
             }
 
             
-
         } else if(cantidadOperandos == 1){
          //    printf("Cod Mnemonico 1 instruccion: %d\n", mnemonico);
             tipoOp1 = (instruccion>>22) & 0X3;
@@ -1276,7 +1275,7 @@ void Dissasembler(int pos_memoria){
             else if((inst & 0x0C000000)==0x04000000){ //Si operando 1 es de registro
                 op = (inst>>12) & 0XFFF;
                 if((op & 0XF) < 10 ){
-                    printf("%s", Registros[op & 0XF].nombre);
+                    printf("%s, ", Registros[op & 0XF].nombre);
                 } else {
                     sectorReg = (op>>4) & 0X3;
                     switch(sectorReg){

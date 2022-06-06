@@ -7,12 +7,13 @@ left    equ     1
 right   equ     2
 ; constantes
 NULL    equ     -1
-titulo  equ  "___ PRUEBA ARBOL BINARIO DE BUSQUEDA ___"
+titulo  equ  "--- PRUEBA ARBOL BINARIO DE BUSQUEDA ---"
 msg_1   equ  "Recorrido en in-order:"
 msg_2   equ  "Recorrido en pre-order:"
 root    equ      1 
 
 ;main
+                sys     %F
 main:           push    1       ;creo la raiz del árbol
                 call    alloc
                 add     sp, 1
