@@ -69,26 +69,19 @@ void slen(__int32 *a, __int32 *b){
        res++;
        aux++;
    }
-  // printf("La longitud es de %d \n", res);
    *a=res;
 }
 
 void smov(__int32 *a, __int32 *b){
     __int32 pos1=*a;
     __int32 pos2=*b;
-    /*
-    printf("Entrando al SMOV \n");
-    printf("Memoria[%d]=%d \n",pos1,Memoria[pos1]);
-    printf("Memoria[%d]=%d \n",pos2,Memoria[pos2]);
-    */
+
     while((char)Memoria[pos2]!='\0'){
-        //printf("Moviendo el caracter %c a la posicion %d \n", Memoria[pos2], pos1);
+
         Memoria[pos1]=Memoria[pos2];
-        //printf("Memoria[%d]: %c \n",pos1, Memoria[pos1]);
         pos1++;
         pos2++;
     }
-   // printf("Memoria[%d]: %c", *a, Memoria[*a]);
    Memoria[pos1]='\0';
 }
 
@@ -96,23 +89,22 @@ void scmp(__int32 *a, __int32 *b){
     __int32 pos1=*a;
     __int32 pos2=*b;
     __int8 resta=0;
-    while(Memoria[pos1]!=0 && Memoria[pos2]!=0 && resta==0){        //si no tenemos en cuenta el primer caracter ANDA BIEN. probar con memoria[pos1+1] && memoria[pos2+1] en la condicion
-        //printf("Restare %c - %c \n", Memoria[pos1], Memoria[pos2]);
+    while(Memoria[pos1]!=0 && Memoria[pos2]!=0 && resta==0){        
+
         resta=Memoria[pos1]-Memoria[pos2];
         pos1++;
         pos2++;
     }
 
     if (resta<0){
-            //printf("a<b \n");
             Registros[8].ValorRegistro= 0x80000000;
              }
     else if (resta>0){
             Registros[8].ValorRegistro=0x0;
-            //printf("a>b \n");
+    
              }
     else    {
-        //printf("a=b \n");
+
         Registros[8].ValorRegistro=0X1;
 
     }
@@ -185,7 +177,7 @@ void jz(__int32 *a){
 }
 
 void jp(__int32 *a){
-    if(Registros[8].ValorRegistro == 0){ //Condición vieja: (Registros[8].ValorRegistro & 0x80000000) == 0x00000000)
+    if(Registros[8].ValorRegistro == 0){ 
         Registros[5].ValorRegistro = *a;
     }
 }
@@ -235,7 +227,7 @@ void not(__int32 *a){
     *a = ~(*a);
 }
 
-__int16 estado= 0x2; // codigo 2= no se hicieron operaciones. la hago global por si debo consultar con el %00??? 
+__int16 estado= 0x2; // codigo 2= no se hicieron operaciones.
 
 void sys(__int32 *a){
 
@@ -249,12 +241,11 @@ void sys(__int32 *a){
     char straux[30],car[15],num1[15],num2[15];
     __int32 vector[128];
 
-   // printf("Entrando en el sys... valor de a: %d \n Valor del DS: %d. Valor del EDX: %d" , *a, ds, edx);
 
     if (*a == 0X1){
-        //printf("Sys 1 \n");
+
         if (ax & 0x100){     //bit vale 1
-            if (!(ax & 0x800)){                             // muestra prompt. si vale 1, no entra.
+            if (!(ax & 0x800)){      // muestra prompt. si vale 1, no entra.
                 printf("[%d]:\t", direccionM+j);
             } 
             scanf("%s", straux);
@@ -264,8 +255,8 @@ void sys(__int32 *a){
             if(j<cx && j==strlen(straux))
                 Memoria[direccionM+j]=0X0;       
         } else{
-            for(i=0x0;i<cx;i++){     // CX=0x3C  
-                if (ax & 0x800){                                    // muestra prompt. si vale 1, no entra.
+            for(i=0x0;i<cx;i++){     
+                if (ax & 0x800){       // muestra prompt. si vale 1, no entra.
                     printf("[%d]:\t ", direccionM+i);
                 }  
                 if ((ax & 0x008)){
@@ -281,13 +272,12 @@ void sys(__int32 *a){
             }
         }
     } else if (*a==0X2){           //sys 2
-         //printf("Sys 2 \n");
         for (i=0;i<cx;i++){
             if (!(ax & 0x800)){
                 printf("[%d]:\t", direccionM+i);     
             }
             if (ax & 0x010){ 
-                if (Memoria[direccionM+i]<=0x7E && Memoria[direccionM+i]>=0x20)  //si es imprimible printeo como char (creo que estos son los caracteres imprimibles, pero no se)
+                if (Memoria[direccionM+i]<=0x7E && Memoria[direccionM+i]>=0x20)  //si es imprimible printeo como char
                     printf("%c ", Memoria[direccionM+i] & 0XFF);
                 else
                     printf(".");  //si no es imprimible printeo un punto
@@ -331,7 +321,7 @@ void sys(__int32 *a){
                 printf("%d\n",x);         //convierto num1 a integer
                 if (car[i]=='\0')    //si no hay nada, entonces no hay segundo numero
                     printf("[%d]: Hexa: %X Decimal: %d \n", x, Memoria[x], Memoria[x]);
-                else if (car[i]==' '){    //si hay espacio, hay segundo numero. no validé que entre otra cosa
+                else if (car[i]==' '){    //si hay espacio, hay segundo numero
                     j=0;
                     while(car[i]!='\0'){      //mientras no sea nulo, concateno en num2
                         num2[j]=car[i];
@@ -348,13 +338,11 @@ void sys(__int32 *a){
                 }
             } else if (car[0]=='r'){
                 breakpoint = 0;
-                //printf("Continuando ejecucion...");
+
             }
         }
     }  else if (*a==0X3){       //string read
-        //cx= cx & 0xFFFF;
-        //ax= ax & 0xFFFF;
-        //printf("Sys 3 \n");
+
         char aux[50];
         __int32 valor=(Registros[reg].ValorRegistro & 0XFFFF) + edx;
         if (!(ax & 0x800)){                            
@@ -363,20 +351,16 @@ void sys(__int32 *a){
         fflush(stdin);
         gets(aux);
         i=0;
-       // printf("Longitud de la palabra: %d \n", strlen(aux));
         while(i<strlen(aux) && i<cx){
-        //    printf ("Cargando caracter %c \n", aux[i]);
+
             Memoria[valor+i]=aux[i];
             i++;
         } 
         Memoria[valor+i]='\0';
-     //   printf("sys 3 terminao  \n");
      } else if (*a==0x4){        //string write
-         //ax= ax & 0xFFFF;
-    //     printf("Sys 4 \n");
+
         i=0;
         __int32 valor=(Registros[reg].ValorRegistro & 0XFFFF) + edx;
-      //   printf("Mi nuevo valor sera: %X + %X = %X \n", Registros[reg].ValorRegistro & 0XFFFF,edx,valor );
         if(valor< ((Registros[reg].ValorRegistro & 0XFFFF) + (Registros[reg].ValorRegistro>>16 & 0XFFFF))){
             if (!(ax & 0x100)){    //printeo con endline
                 while (Memoria[valor+i]!='\0'){  
@@ -432,20 +416,19 @@ void sys(__int32 *a){
                 Disk = fopen(aux->nombreDisco,"wb+");    //w+ crea un archivo vacio para leer y escribir
                 printf("Creando archivo default!! \n");
                 sectorDisco sec;
-                sec.tipoArchivo = 0x56444430; // es VDD0 en hexa. comprobadísimo
+                sec.tipoArchivo = 0x56444430; // es VDD0 en hexa.
                 sec.numVersion=0x00000001;
-              //  __int64 auxiliar=rand();
+        
                for (int l=0;i<16;l++){
                  sec.GUID[l]=rand();
                }
-             //   sec.GUID="jh7ee914b137";
-              //  strcpy(sec.GUID,rand);  //randomizar despues
+
             
                 sec.fechaCreacion=0X1348A6D;
                 sec.horaCreacion=0x00A12DE1;
                 sec.tipo=0x1;
                 sec.cantCilindros=0x80;
-              //  printf("La cantidad de cilindros sera de %d", sec.cantCilindros); //128 no entra en 8 bits!!!! por complemento a 2, va de -128 a 127 
+    
                 sec.cantCabezas=0x80;
                 sec.cantSectores=0x80;
                 sec.tamSector=0x200;
@@ -474,7 +457,7 @@ void sys(__int32 *a){
                 BYTE C =sec.cantCilindros;  //cantidad cilindros    
                 if (CH<=C && CH>0){
                      BYTE Ca=sec.cantCabezas;          //cant cabezas (se usa en case 8)  
-                     //printf(" Ca: %d CL: %d \n", Ca, CL);   
+  
                     if (CL<=Ca && CL>0){                //cantidad sectores
                         BYTE S=sec.cantSectores;           
                         if (DH<=S && DH>0){
@@ -550,20 +533,19 @@ void sys(__int32 *a){
                                             DSL+=128; 
                                         }else{
                                             estado=0x04;
-                                            printf("OVERFLOW!! \n");  //no deberia mostrarlo aca, sino cuando muestre el estado
-                                            //exit(0);
+                                            printf("OVERFLOW!! \n");  
                                         }
                                             
                                         }       
                                 } 
-                                //ES empieza en Header[4] + Header[1]
+
                                 else if (EH == 2){   //ES
                                     __int16 ESL = (Header[4])+(Header[1]);  //cs + ds. esto es donde empieza el ES
                                     __int16 ESH = (Header[4])+(Header[1]) + (Header[3]); //cs + ds + es. Esto es donde termina el ES.
                                    
-                                    printf("Primera celda del ES: %d. \n Ultima celda del ES: %d \n", ESL,ESH); //ESL=1035    ESH=2059
+                                    printf("Primera celda del ES: %d. \n Ultima celda del ES: %d \n", ESL,ESH); 
                                     for (j=0;j<AL;j++){
-                                        if (ESL+EL>=ESL && ESL+EL+128<=ESH){ //1035+64+128<=2059
+                                        if (ESL+EL>=ESL && ESL+EL+128<=ESH){ 
                                             for (i=0;i<128;i++){
                                                 printf("Guardando en la seccion de memoria %d \n", ESL+EL+i);
                                                 Memoria[ESL+EL+i]=vector[i];    
@@ -587,7 +569,6 @@ void sys(__int32 *a){
                                         } else{
                                             estado=0x04;
                                             printf("OVERFLOW!! \n"); //no deberia mostrarlo aca, sino cuando muestre el estado
-                                            //exit(0);
                                         }
                                     }
 
@@ -625,8 +606,8 @@ void sys(__int32 *a){
                                             DSL+=128; 
                                         }else{
                                             estado=0xCC;
-                                            printf("OVERFLOW!! \n");  //no deberia mostrarlo aca, sino cuando muestre el estado
-                                          //  exit(0);
+                                            printf("OVERFLOW!! \n");  
+                
                                         }
                                             
                                         }       
@@ -660,8 +641,7 @@ void sys(__int32 *a){
                                             ESL+=128;
                                         } else{
                                             estado=0xCC;
-                                            printf("OVERFLOW!! \n");  //no deberia mostrarlo aca, sino cuando muestre el estado
-                                          //  exit(0);
+                                            printf("OVERFLOW!! \n");  
                                         }
                                     }
 
@@ -706,30 +686,7 @@ void stop(){
     Registros[5].ValorRegistro = Registros[0].ValorRegistro;
 }
 
-/*
 
-void SetParteAlta(int i, int32_t valor){
-    valor = (valor << 16);
-    Registros[i].ValorRegistro = valor + GetParteBaja(i);
-}
-
-void SetParteBaja(int i, int32_t valor){
-    Registros[i].ValorRegistro = (GetParteAlta(i) << 16) + (valor & 0x0000FFFF);
-}
-
-int32_t GetParteAlta(int i){
-    int32_t alta = Registros[i].ValorRegistro;
-    alta = (alta >> 16);
-    return alta;
-}
-
-int32_t GetParteBaja(int i){
-    int32_t baja = Registros[i].ValorRegistro;
-    baja = (baja << 16);
-    baja = (baja >> 16);
-    return baja;
-}
-*/
 
 //-------------------------PILA-------------------------
 
@@ -821,12 +778,7 @@ int main(int arg,char *args[]){
             printf("Disco %s \n", aux->nombreDisco);
             aux=aux->sig;
         }
-    /*
-        for (int i = 0; i < Header[4]; i++)
-        {
-            printf("%X\n",Memoria[i]);
-        }
-        */
+ 
       
         if(archI!=NULL){    
             if (arg>1){ //Si hay banderas, se fija cuáles están.
@@ -978,13 +930,9 @@ void cargaMnemonicos()  //funcion que carga los mnemonicos con sus respectivos c
         __int32 tamSeg = Registros[codSeg].ValorRegistro >> 16;        //tamaño del segmento referenciado
         __int32 valorRegistro = Registros[codReg].ValorRegistro & 0xFFFF;   //valor registro
 
-       /* printf("Codigo registro: %X \n", codReg);
-        printf("Codigo de segmento: %d Tamano del segmento: %d \n", codSeg, tamSeg);
-        printf("El segmento comienza en la celda %d \n", seg);
-        printf("El valor de mi registro es de %d \n", valorRegistro); */
 
         if (seg+valorRegistro+offset<=tamSeg+seg){
-            //printf("La posicion de memoria es: %d y el valor es: %d",seg+valorRegistro+offset, seg+valorRegistro+offset);
+           
             valorOp= seg+valorRegistro+offset;
         } else{
             Errores[2]=1;
@@ -1007,7 +955,7 @@ void leeInstruccion(){
 
         
         mnemonico = leeMnemonico(instruccion,&cantidadOperandos);
-      //  printf("Cod Mnemonico: %d\n", mnemonico);
+
         if(cantidadOperandos == 2){
             tipoOp1 = (instruccion >> 26) & 0X3;
             tipoOp2 = (instruccion >> 24) & 0X3;
@@ -1054,17 +1002,17 @@ void leeInstruccion(){
                 if(mnemonico != 0X0 && mnemonico != 0X3 && mnemonico !=0X6 && mnemonico != 0XE && mnemonico != 0XD && mnemonico!= 0XC){ // cambia el valor de CC seguun el resultado que se calcule
                     cambiaCC(valorOp1);
                 }
-             //   printf("EDXH =  %X \t EDXL= %X\n", (Registros[13].ValorRegistro>>16 & 0xFFFF), Registros[13].ValorRegistro & 0xFFFF);
+            
             }
 
             
         } else if(cantidadOperandos == 1){
-         //    printf("Cod Mnemonico 1 instruccion: %d\n", mnemonico);
+    
             tipoOp1 = (instruccion>>22) & 0X3;
             op1 = instruccion & 0XFFFF; 
             valorOp1 = decodificaOperando(op1,tipoOp1);
-            if (Errores[2]==0){
-              //  printf("haciendo funcion: %X, valor: %X\n", mnemonico, valorOp1);
+            if (Errores[2]==0 && Errores[3]==0){
+      
                  (*fun2[mnemonico & 0XF])(&valorOp1);
                  if (mnemonico==0XFA || mnemonico==0XFB || mnemonico==0XFD){   // RND, NOT
                     alamacenaRM(valorOp1,tipoOp1,op1);
@@ -1087,7 +1035,7 @@ void leeInstruccion(){
     }
     if(Errores[0]) 
         printf("Segmentation Fault");
-    else if(Errores[1])   
+    else if(Errores[3])   
         printf("Stack Overflow");
     else if(Errores[4])
         printf("Stack Underflow");
@@ -1151,15 +1099,9 @@ __int32 decodificaOperando(__int32 op, __int32 tipoOp){
         __int32 seg = Registros[codSeg].ValorRegistro & 0xFFFF;        //donde comienza el segmento en memoria
         __int32 tamSeg = Registros[codSeg].ValorRegistro >> 16 & 0XFFFF;        //tamaño del segmento referenciado
         __int32 valorRegistro = Registros[codReg].ValorRegistro & 0xFFFF;   //valor registro
-/*
-        printf("Codigo registro: %X \n", codReg);
-        printf("Codigo de segmento: %d Tamano del segmento: %d \n", codSeg, tamSeg);
-        printf("El segmento comienza en la celda %d \n", seg);
-        printf("El valor de mi registro es de %d \n", valorRegistro); 
-        */
+
         if(codSeg >= 0 && codSeg<=3){
             if (seg+valorRegistro+offset<=tamSeg+seg){
-                //printf("La posicion de memoria es: %d y el valor es: %d",seg+valorRegistro+offset, Memoria[seg+valorRegistro+offset]);
                 valorOp= Memoria[seg+valorRegistro+offset];
             } else{
                 Errores[2]=1;

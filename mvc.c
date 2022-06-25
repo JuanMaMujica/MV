@@ -62,7 +62,7 @@ int main(int arg, char *args[])
 {   
    
 
-    int k,i=0,j=6,tamanoCS=0 ,tamanoDS=1024, tamanoES=1024, tamanoSS=1024;    //checkear cuando hay que sumar el numero de linea y cuando no
+    int k,i=0,j=6,tamanoCS=0 ,tamanoDS=1024, tamanoES=1024, tamanoSS=1024;
     __int32 header[6];
     elementosMnemonicos mnemonicos[32];
     ListaRotulos LR = NULL;
@@ -92,7 +92,7 @@ int main(int arg, char *args[])
     if(archI!=NULL)     //si el archivo de entrada no existe o se genera algun error no hace nada
     {
         buscaRotulo(&LR,archI,&tamanoCS,&tamanoDS,&tamanoES,&tamanoSS,&LS);
-        while(LS!=NULL){      //inserto constantes string despues del CS (Lo chekie anda bien)
+        while(LS!=NULL){      //inserto constantes string despues del CS
             k=0;
             int len=strlen(LS->valor);
             while (k<=len){
@@ -111,14 +111,11 @@ int main(int arg, char *args[])
             }
             LS=LS->sig;
         }
-       // Registros[0].ValorRegistro=contadorDS;
-        
-        //printf("El tamanio del CS es de: %d \n", tamanoCS);
+
         InicializaHeader(header,tamanoCS,tamanoDS,tamanoES,tamanoSS);
         fseek(archI,0,SEEK_SET);
 
             for (int i=0; i < 6; i++){
-               // printf("%X", header[i]);
                 Memoria[i] = header[i];
             }
 
@@ -139,9 +136,6 @@ int main(int arg, char *args[])
                     printf("%s\n",parsed[4]);
                 }      
         }
-        {
-            /* code */
-        }
         
         freeline(parsed);
       
@@ -150,13 +144,6 @@ int main(int arg, char *args[])
             while(Memoria[i]<6){
                 printf("%X\n", Memoria[i]);
             }
-
-/*
-            for (int i = 0; i < tamanoCS + 5; i++)
-            {
-                printf("[%d]: %X\n",i,Memoria[i]);
-            }
-  */          
             fwrite(Memoria,sizeof(__int32),tamanoCS+6,archO);  
         }       
     }
@@ -221,7 +208,6 @@ void cargaMnemonicos(elementosMnemonicos mnemonicos[])  //funcion que carga los 
     strcpy(mnemonicos[10].mnemonico,"OR");
     mnemonicos[11].cod=0XB;
     strcpy(mnemonicos[11].mnemonico,"XOR");
-
     mnemonicos[12].cod=0xC;
     strcpy(mnemonicos[12].mnemonico,"SLEN");
     mnemonicos[13].cod=0xD;
@@ -272,8 +258,6 @@ void ingresarRotulo(ListaRotulos *LR, char rotulo[], int lineaRotulo)
     aux->linea=lineaRotulo;
     aux->sig = NULL;
     strcpy(aux->rotulo,rotulo);
-
-    //printf("Ingresando rotulo %s con valor %d \n", rotulo,lineaRotulo);
 
     if (*LR!=NULL)          //Ingresamos el rotulo siempre por cabecera
         aux->sig = *LR;
@@ -326,7 +310,7 @@ void buscaRotulo(ListaRotulos *LR, FILE *archA, int *tamanoCS, int *tamanoDS, in
                 exit(0);
             }
         }
-        if(!(parsed[0]==NULL && parsed[1]==NULL && parsed[2]==NULL && parsed[3]==NULL))  // parsed[1]!=NULL
+        if(!(parsed[0]==NULL && parsed[1]==NULL && parsed[2]==NULL && parsed[3]==NULL))  
             i++;
         if (parsed[5]!=NULL){
             strToUpper(parsed[5]);
@@ -338,10 +322,8 @@ void buscaRotulo(ListaRotulos *LR, FILE *archA, int *tamanoCS, int *tamanoDS, in
                 *tamanoSS = atoi(parsed[6]);
         }
 
-        //printf("\n Tamaños asignados");
-
         if(parsed[7]!=NULL && parsed[8]!=NULL){
-            char auxV[200], auxA[200];   //Necesito un array de char para poder darle la direccion al puntero aux y sacar las comillas
+            char auxV[200], auxA[200];   
             char auxnombre[20];
             strToUpper(parsed[7]);
             strcpy (auxA,parsed[8]);
@@ -360,7 +342,7 @@ void buscaRotulo(ListaRotulos *LR, FILE *archA, int *tamanoCS, int *tamanoDS, in
                 strcpy(auxV,auxA);  //si no es un string se lo pasa tal cual esta
             }
             if ((auxnombre[0]<'0' || auxnombre[0]>'9') && strlen(auxnombre)>=3 && strlen(auxnombre)<=10){    //verifico que el nombre del simbolo tenga mas de 3 y menos de 10 caracteres. y que el primer caracter no sea un digito
-                if (isString){    //si el valor del simbolo es un string       auxV[1]!='\0' && ((auxV[0]<'0' || auxV[0]>'9') && !(auxV[0]=='@' || auxV[0]=='%' || auxV[0]=='#' || auxV[0]=='-'))
+                if (isString){    //si el valor del simbolo es un string       
                     if (!duplicado(*LR,auxnombre) && !duplicadoStr(*LS,auxnombre)){
                         strToUpper(auxnombre);
                         ListaString aux;
@@ -383,7 +365,7 @@ void buscaRotulo(ListaRotulos *LR, FILE *archA, int *tamanoCS, int *tamanoDS, in
                     }
                 }
             }else {
-                printf("WARNING: Simbolo %s invalido.\n", auxnombre);    //aca no se si ponerle un warning y que siga traduciendo o que cancele de una xd
+                printf("WARNING: Simbolo %s invalido.\n", auxnombre);   
                 error=1;
             }
         }
@@ -420,10 +402,10 @@ __int32 esRotulo(char ope[],ListaRotulos LR){
 
 void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemonicos[],ListaRotulos LR,TRegistros Registros[],int *error,int i,char *imprimir){
     
-    //VERIFICAR EL ERROR DE SINTAXIS CUANDO NO ENCUENTRA UN MNEMONICO
+    
     __int32 mnemonico,op1,op2;
     int tipoOpe1,tipoOpe2;
-    //error=0;
+
     char comentario[100]=";";
         if(parsed[4]!=NULL){
             strcat(comentario,parsed[4]); 
@@ -440,9 +422,8 @@ void Traduccion(char **parsed,__int32 *instruccionBin,elementosMnemonicos mnemon
 
             tipoOpe1 = tipoOperando(op1String,LR);
             tipoOpe2 = tipoOperando(op2String,LR);
-    //printf("tipo operando 1: %d -- tipo operando 2: %d\n",tipoOpe1,tipoOpe2);
             op1 =transformaOperando(op1String,tipoOpe1,Registros,LR);
-            //printf("operando 1: %X\n",op1);
+
             if (tipoOpe1==0){
                 if(op1>0XFFF){
                     op1 = op1 & 0XFFF;
@@ -699,8 +680,7 @@ __int32 DevuelveIndirecto(char operando[],TRegistros Registros[], ListaRotulos L
         
     } 
 
-    while (i<=15 && strcmp(reg,Registros[i].nombre)!=0) {
-    //  printf("Elemento %d del registro: %s \n", i, Registros[i].nombre);
+    while (i<=15 && strcmp(reg,Registros[i].nombre)!=0) {   // busca el registro
         i++;
     }   
 
@@ -709,7 +689,6 @@ __int32 DevuelveIndirecto(char operando[],TRegistros Registros[], ListaRotulos L
     else{            
         if (!doscaracteres && ope[3]=='+' || ope[3]=='-'){     //hay offset
             if (ope[4]>='0' && ope[4]<='9'){  //si es un digito
-                    //printf("Offset digito \n");
                     k=4; 
                     j=0;
                     while (ope[k]!='\0'){
@@ -741,7 +720,6 @@ __int32 DevuelveIndirecto(char operando[],TRegistros Registros[], ListaRotulos L
             res= res << 4 | (i & 0xF);
         } else if (doscaracteres && ope[2]=='+' || ope[2]=='-'){
             if (ope[3]>='0' && ope[3]<='9'){  //si es un digito
-              //  printf("Offset digito 2 caracteres\n");
                 k=3; 
                 j=0;
                 while (ope[k]!='\0'){
@@ -830,6 +808,5 @@ __int32 DevuelveConstantValue(char operando[]){
                     default:
                         return -1;  // Utilizamos -1 para decir que es un error de sintaxis 
                 }
-            //}
         }
     }
